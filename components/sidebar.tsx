@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
+  ClipboardList, 
+  CheckSquare, 
   Calendar, 
-  Layers, 
-  Lightbulb, 
-  FolderKanban, 
-  BarChart3, 
+  AlertCircle, 
   Users, 
+  BarChart2, 
+  ExternalLink,
   Settings,
   X 
 } from 'lucide-react';
@@ -19,17 +20,17 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Content Planner', href: '/planner', icon: FolderKanban },
-  { name: 'Calendar', href: '/calendar', icon: Calendar },
-  { name: 'Idea Bank', href: '/ideas', icon: Lightbulb },
-  { name: 'Assets', href: '/assets', icon: Layers },
+const mainNav = [
+  { name: 'My Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Content', href: '/content', icon: ClipboardList },
+  { name: 'My Tasks', href: '/tasks', icon: CheckSquare },
+  { name: 'Schedule', href: '/schedule', icon: Calendar },
+  { name: 'Attention', href: '/attention', icon: AlertCircle },
 ];
 
 const secondaryNav = [
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Team', href: '/team', icon: Users },
+  { name: 'Progress', href: '/progress', icon: BarChart2 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
@@ -38,13 +39,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Backdrop untuk mobile */}
-      {isOpen && (
-        <div 
-          onClick={onClose} 
-          className="fixed inset-0 bg-black/40 z-45 md:hidden"
-        />
-      )}
+      {isOpen && <div onClick={onClose} className="fixed inset-0 bg-black/40 z-40 md:hidden" />}
 
       <aside className={`
         fixed md:static inset-y-0 left-0 z-50
@@ -53,11 +48,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <div className="flex items-center justify-between px-2 py-3 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[#171717] rounded-md flex items-center justify-center text-white text-xs font-bold">
-              CP
-            </div>
-            <span className="font-semibold text-[#171717] text-sm tracking-wide">Workspace</span>
+          <div>
+            <div className="font-bold text-sm tracking-tight text-[#171717]">Savas&apos;t Workspace</div>
+            <div className="text-[10px] text-[#737373]">Content Team Assistant</div>
           </div>
           {isOpen && (
             <button onClick={onClose} className="p-1 rounded-lg hover:bg-black/5 md:hidden">
@@ -66,11 +59,11 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           )}
         </div>
 
-        <div className="text-[11px] font-medium text-[#737373] px-2 mb-2 uppercase tracking-wider">
+        <div className="text-[10px] font-semibold text-[#737373] px-2 mb-2 uppercase tracking-wider">
           Content Hub
         </div>
         <nav className="space-y-1">
-          {navigation.map((item) => {
+          {mainNav.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (
@@ -78,9 +71,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 key={item.name}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                   isActive 
-                    ? 'bg-white text-[#171717] shadow-xs border border-[#E5E5E5]/60' 
+                    ? 'bg-white text-[#171717] shadow-2xs border border-[#E5E5E5]' 
                     : 'text-[#737373] hover:text-[#171717] hover:bg-white/50'
                 }`}
               >
@@ -93,6 +86,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
         <hr className="my-4 border-[#E5E5E5]" />
 
+        <div className="text-[10px] font-semibold text-[#737373] px-2 mb-2 uppercase tracking-wider">
+          Management
+        </div>
         <nav className="space-y-1">
           {secondaryNav.map((item) => {
             const isActive = pathname === item.href;
@@ -102,9 +98,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 key={item.name}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                   isActive 
-                    ? 'bg-white text-[#171717] shadow-xs border border-[#E5E5E5]/60' 
+                    ? 'bg-white text-[#171717] shadow-2xs border border-[#E5E5E5]' 
                     : 'text-[#737373] hover:text-[#171717] hover:bg-white/50'
                 }`}
               >
@@ -114,6 +110,18 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             );
           })}
         </nav>
+
+        <div className="mt-auto pt-4 border-t border-[#E5E5E5]">
+          <a
+            href="https://docs.google.com/spreadsheets" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-[#737373] hover:text-[#171717] hover:bg-white border border-transparent hover:border-[#E5E5E5] transition-all"
+          >
+            <span>Open Spreadsheet</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </div>
       </aside>
     </>
   );
