@@ -1,0 +1,83 @@
+{
+  "sheets": {
+    "September26": [
+      [
+        "Content ID",
+        "Week",
+        "Date",
+        "Week Day",
+        "Holidays",
+        "Post Title",
+        "Status",
+        "Platform",
+        "Format",
+        "Content Pillars",
+        "Image",
+        "Copywriting",
+        "Content Planner",
+        "Copywriter",
+        "Graphic Designer",
+        "Video Editor",
+        "Social Media Admin",
+        "Deadline",
+        "Progress"
+      ],
+      [
+        "SEP-001",
+        "Week 1",
+        "2026-09-01",
+        "Selasa",
+        "",
+        "Cinematic Review Savas't Tea",
+        "Planned",
+        "Instagram",
+        "Reels",
+        "General",
+        "",
+        "",
+        "",
+        "Filius",
+        "Raka",
+        "Kevin",
+        "Alya",
+        "2026-09-01",
+        "0%"
+      ],
+      [
+        "SEP-999",
+        "Week 1",
+        "2026-09-01",
+        "Selasa",
+        "",
+        "wdwadwa",
+        "Planned",
+        "Instagram",
+        "Reels",
+        "General",
+        "",
+        "",
+        "",
+        "Filius",
+        "Raka",
+        "Kevin",
+        "Alya",
+        "2026-09-01",
+        "0%"
+      ]
+    ],
+    "Team": [
+      [
+        "Name",
+        "Jobdesk"
+      ],
+      [
+        "Filius",
+        "Content Planner"
+      ],
+      [
+        "Raka",
+        "Video Editor"
+      ]
+    ]
+  }
+}
