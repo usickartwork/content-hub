@@ -278,7 +278,7 @@ export default function WorkflowWorkspace() {
           <div style={styles.logoBadge}>D</div>
           <div>
             <h1 style={styles.brandTitle}>Dream Field</h1>
-            <p style={styles.brandSubtitle}>Workspace Jobdesk</p>
+            <p style={styles.brandSubtitle}>Workspace Konten</p>
           </div>
         </div>
 
@@ -307,7 +307,7 @@ export default function WorkflowWorkspace() {
                 <div style={styles.logoBadge}>D</div>
                 <div>
                   <h1 style={styles.brandTitle}>Dream Field</h1>
-                  <p style={styles.brandSubtitle}>Workspace Jobdesk</p>
+                  <p style={styles.brandSubtitle}>Workspace Konten</p>
                 </div>
               </div>
               <button onClick={() => setIsMobileSidebarOpen(false)} style={styles.closeBtn}>✕</button>
@@ -352,7 +352,7 @@ export default function WorkflowWorkspace() {
             {contentList.length === 0 ? (
               <div style={styles.emptyState}>
                 Belum ada konten aktif di periode ini.<br />
-                <span style={{ fontSize: '11px', color: '#A1A1AA', marginTop: '6px', display: 'inline-block' }}>Gunakan akun Admin / Planner untuk mulai input konten baru.</span>
+                <span style={{ fontSize: '11px', color: '#A1A1AA', marginTop: '6px', display: 'inline-block' }}>Klik "+ Input Konten Baru" untuk mulai menambah konten.</span>
               </div>
             ) : (
               contentList.map((item: any, idx: number) => {

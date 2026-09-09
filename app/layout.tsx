@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Dream Field Workspace',
-  description: 'Sistem Jobdesk & Estafet Konten Dream Field',
+  description: 'Sistem Manajemen & Estafet Konten Dream Field',
 };
 
 export default function RootLayout({
