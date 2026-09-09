@@ -128,3 +128,53 @@ function deleteContentEvents_(id) {
   });
   return deleted;
 }
+
+/************************************************************
+ * BACKFILL: SYNC SEMUA KONTEN YANG SUDAH ADA DI SPREADSHEET KE KALENDER
+ * ---------------------------------------------------------------
+ * Jalankan sekali dari editor Apps Script (nama fungsi tanpa awalan _),
+ * atau panggil manual lewat endpoint:
+ *    doPost dengan body { action: 'sync_all', sheetNames: [...] }
+ *
+ * Fungsi ini membaca semua sheet periode, lalu membuat/update event
+ * untuk setiap baris yang punya judul + tanggal. Aman dijalankan
+ * berulang (event lama ber-Content ID sama otomatis dihapus).
+ ************************************************************/
+function syncAllContentToCalendars() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var monthSheets = ['August26', 'September26', 'October26', 'November26', 'December26']
+    .filter(function (n) { return ss.getSheetByName(n) !== null; });
+
+  var total = 0;
+  var syncedTotal = 0;
+  var skippedTotal = 0;
+
+  monthSheets.forEach(function (name) {
+    var sheet = ss.getSheetByName(name);
+    var values = sheet.getDataRange().getValues();
+
+    // Cari baris header (kolom pertama 'Content ID' / 'id')
+    var headerRow = -1;
+    for (var i = 0; i < values.length; i++) {
+      var first = String(values[i][0] || '').trim().toLowerCase();
+      if (first === 'content id' || first === 'id') {
+        headerRow = i;
+        break;
+      }
+    }
+    if (headerRow === -1) {
+      console.log('Sheet ' + name + ': header tidak ditemukan, dilewati');
+      return;
+    }
+
+    for (var j = headerRow + 1; j < values.length; j++) {
+      total++;
+      var res = syncContentToCalendars_(values[j]);
+      syncedTotal += res.synced;
+      skippedTotal += res.skipped;
+    }
+  });
+
+  Logger.log('Sync selesai -> Total baris: ' + total + ', Event dibuat/diupdate: ' + syncedTotal + ', Dilewati: ' + skippedTotal);
+  return { total: total, synced: syncedTotal, skipped: skippedTotal };
+}
