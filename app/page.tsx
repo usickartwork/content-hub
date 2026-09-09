@@ -452,23 +452,28 @@ export default function WorkflowWorkspace() {
         @media (max-width: 768px) {
           .desktop-sidebar { display: none !important; }
           .mobile-header-bar { display: flex !important; }
-          .app-container { flex-direction: column !important; height: auto !important; min-height: 100vh !important; overflow: visible !important; }
-          .app-main { height: auto !important; min-height: 100vh !important; overflow: visible !important; }
-          .main-header { padding: 12px 14px !important; flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+          .app-container { flex-direction: column !important; height: auto !important; min-height: 100vh !important; overflow: visible !important; overflow-x: hidden !important; }
+          .app-main { height: auto !important; min-height: 100vh !important; overflow: visible !important; padding-top: 56px !important; }
+          .main-header { padding: 14px 16px !important; flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
           .header-actions-row { width: 100% !important; display: flex !important; flex-wrap: wrap !important; gap: 8px !important; justify-content: flex-start !important; }
           .header-actions-row button, .header-actions-row input { flex-shrink: 1 !important; min-width: 0 !important; }
           .search-input-field { width: 100% !important; flex: 1 1 100% !important; }
-          .content-area-wrapper { padding: 12px 14px !important; }
+          .content-area-wrapper { padding: 14px 16px !important; overflow: visible !important; overflow-x: hidden !important; }
           .grid-container-cards { grid-template-columns: 1fr !important; gap: 12px !important; }
           .dashboard-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
           .calendar-grid { gap: 3px !important; }
-          .calendar-grid > div { min-width: 0 !important; }
+          .calendar-grid > div { min-width: 0 !important; overflow: hidden !important; }
           .report-form-grid { grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
           .modal-box-card { max-width: 100% !important; width: 100% !important; height: 100% !important; max-height: 100vh !important; border-radius: 0 !important; padding: 16px !important; }
           .modal-two-col { grid-template-columns: 1fr !important; }
           .statistik-grid { grid-template-columns: 1fr !important; }
           .report-history-item { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; }
           .mobile-drawer { width: 100% !important; max-width: 100% !important; border-radius: 0 !important; height: 100% !important; max-height: 100vh !important; overflow-y: auto !important; }
+          .card-header { flex-wrap: wrap !important; gap: 6px !important; }
+          .card-title { word-break: break-word !important; }
+          .workflow-badge-inner { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; }
+          .stat-row-mobile { flex-direction: column !important; }
+          .header-title-row { flex-wrap: wrap !important; }
         }
         @media (max-width: 380px) {
           .report-form-grid { grid-template-columns: 1fr !important; }
@@ -607,15 +612,15 @@ export default function WorkflowWorkspace() {
 
                   return (
                     <div key={idx} style={styles.card}>
-                      <div style={styles.cardHeader}>
+                      <div className="card-header" style={styles.cardHeader}>
                         <span style={styles.dateBadge}>{item.date}</span>
                         <button onClick={() => handleOpenEditModal(item)} style={styles.editBtn}>Update Estafet</button>
                       </div>
 
-                      <h3 style={styles.cardTitle}>{item.title}</h3>
+                      <h3 className="card-title" style={styles.cardTitle}>{item.title}</h3>
 
                       <div style={{ ...styles.workflowBadge, backgroundColor: isFinished ? '#DCFCE7' : '#FEF3C7', borderColor: isFinished ? '#86EFAC' : '#FDE68A', color: isFinished ? '#166534' : '#92400E' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div className="workflow-badge-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ fontSize: '12px', fontWeight: 700 }}>{item.stage}</span>
                           <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', backgroundColor: isFinished ? '#166534' : '#D97706', color: '#FFF' }}>
                             {item.checkStatus === 'Selesai' ? 'SELESAI' : 'PROSES'}
