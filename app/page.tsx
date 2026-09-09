@@ -58,6 +58,7 @@ export default function WorkflowWorkspace() {
   const [postTitle, setPostTitle] = useState('');
   
   const [activeStage, setActiveStage] = useState(STAGE_NAMES[0]);
+  const [selectedStage, setSelectedStage] = useState(STAGE_NAMES[0]);
   const [statusCheck, setStatusCheck] = useState('Proses');
   const [platform, setPlatform] = useState('Instagram');
   const [format, setFormat] = useState('Reels');
@@ -118,6 +119,7 @@ export default function WorkflowWorkspace() {
     setHolidays('');
     setPostTitle('');
     setActiveStage(STAGE_NAMES[0]);
+    setSelectedStage(STAGE_NAMES[0]);
     setStatusCheck('Proses');
     setPlatform('Instagram');
     setFormat('Reels');
@@ -141,6 +143,7 @@ export default function WorkflowWorkspace() {
     setHolidays(item.raw[4] || '');
     setPostTitle(item.title);
     setActiveStage(itemStage);
+    setSelectedStage(itemStage);
     setStatusCheck('Proses');
     setPlatform(item.raw[7] || 'Instagram');
     setFormat(item.raw[8] || 'Reels');
@@ -167,13 +170,7 @@ export default function WorkflowWorkspace() {
     if (!isEditing) {
       finalStageToSave = '1. Concept (Proses)';
     } else {
-      const currentIdx = STAGE_NAMES.indexOf(activeStage);
-      if (statusCheck === 'Selesai' && currentIdx < STAGE_NAMES.length - 1) {
-        const nextStageName = STAGE_NAMES[currentIdx + 1];
-        finalStageToSave = `${nextStageName} (Proses)`;
-      } else {
-        finalStageToSave = `${activeStage} (${statusCheck})`;
-      }
+      finalStageToSave = `${selectedStage} (${statusCheck})`;
     }
 
     const newRowData = [
@@ -834,9 +831,37 @@ export default function WorkflowWorkspace() {
 
             <form onSubmit={handleAddOrUpdateContent} style={styles.form}>
               {isEditing && (
-                <div style={{ backgroundColor: '#F4F4F5', padding: '10px 12px', borderRadius: '10px', border: '1px solid #E4E4E7' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: '#71717A', display: 'block' }}>Tahap Tugas Saat Ini</span>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#09090B', marginTop: '2px' }}>{activeStage}</div>
+                <div>
+                  <label style={styles.label}>Tahap Pengerjaan</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                    {STAGE_NAMES.map((stage, idx) => {
+                      const isSelected = selectedStage === stage;
+                      const isPast = STAGE_NAMES.indexOf(selectedStage) > idx;
+                      return (
+                        <button
+                          key={stage}
+                          type="button"
+                          onClick={() => setSelectedStage(stage)}
+                          style={{
+                            padding: '10px 14px', borderRadius: '10px', textAlign: 'left', cursor: 'pointer',
+                            border: isSelected ? '2px solid #2563EB' : '1px solid #E4E4E7',
+                            backgroundColor: isSelected ? '#EFF6FF' : isPast ? '#F0FDF4' : '#FAFAFA',
+                            fontWeight: isSelected ? 700 : 500,
+                            fontSize: '12px',
+                            color: isSelected ? '#1D4ED8' : isPast ? '#166534' : '#52525B',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {isSelected && <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#2563EB', flexShrink: 0 }} />}
+                            {!isSelected && isPast && <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981', flexShrink: 0 }} />}
+                            {!isSelected && !isPast && <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#D1D5DB', flexShrink: 0 }} />}
+                            {stage}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -846,7 +871,7 @@ export default function WorkflowWorkspace() {
                   <button type="button" onClick={() => setStatusCheck('Proses')} style={{ padding: '10px', borderRadius: '10px', border: statusCheck === 'Proses' ? '2px solid #D97706' : '1px solid #E4E4E7', backgroundColor: statusCheck === 'Proses' ? '#FEF3C7' : '#FAFAFA', fontWeight: 700, fontSize: '12px', color: '#92400E', cursor: 'pointer' }}>Proses</button>
                   <button type="button" onClick={() => setStatusCheck('Selesai')} style={{ padding: '10px', borderRadius: '10px', border: statusCheck === 'Selesai' ? '2px solid #166534' : '1px solid #E4E4E7', backgroundColor: statusCheck === 'Selesai' ? '#DCFCE7' : '#FAFAFA', fontWeight: 700, fontSize: '12px', color: '#166534', cursor: 'pointer' }}>Selesai</button>
                 </div>
-                <span style={{ fontSize: '11px', color: '#71717A', marginTop: '6px', display: 'block', fontWeight: 500 }}>Jika memilih <b>Selesai</b>, sistem otomatis mengoper konten ke tahap berikutnya.</span>
+                <span style={{ fontSize: '11px', color: '#71717A', marginTop: '6px', display: 'block', fontWeight: 500 }}><b>Selesai</b> = tahap ini sudah dikerjakan. <b>Proses</b> = masih dalam pengerjaan.</span>
               </div>
 
               <div>
