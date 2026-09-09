@@ -13,6 +13,24 @@ const STAGE_NAMES = [
 
 const MONTH_ORDER = ['December26', 'November26', 'October26', 'September26', 'August26'];
 
+const MONTH_MAP: Record<string, number> = {
+  January: 0, February: 1, March: 2, April: 3, May: 4, June: 5,
+  July: 6, August: 7, September: 8, October: 9, November: 10, December: 11,
+};
+
+function getMonthGrid(sheetName: string) {
+  const monthName = sheetName.replace(/[0-9]+$/, '');
+  const year = parseInt(sheetName.replace(/^[A-Za-z]+/, ''), 10) || 2026;
+  const month = MONTH_MAP[monthName] ?? new Date().getMonth();
+  const first = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startOffset = (first.getDay() + 6) % 7; // Senin = 0
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < startOffset; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  return { monthName, year, cells };
+}
+
 export default function WorkflowWorkspace() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -25,6 +43,7 @@ export default function WorkflowWorkspace() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<'konten' | 'dashboard' | 'kalender' | 'statistik'>('konten');
   
   const [contentId, setContentId] = useState('CONT-001');
   const [week, setWeek] = useState('Week 1');
@@ -249,6 +268,49 @@ export default function WorkflowWorkspace() {
   const sortedSheetNames = MONTH_ORDER.filter(m => availableSheetsFromData.includes(m));
   const finalSheetList = sortedSheetNames.length > 0 ? sortedSheetNames : availableSheetsFromData;
 
+  const stageCounts = STAGE_NAMES.map(name => ({
+    name,
+    total: contentList.filter((i: any) => i.stage === name).length,
+    done: contentList.filter((i: any) => i.stage === name && i.checkStatus === 'Selesai').length,
+  }));
+
+  const platformNames = Array.from(new Set(contentList.map((i: any) => String(i.platform || '-')))) as string[];
+  const platformCounts = platformNames.filter(n => n !== '-').map(name => ({
+    name,
+    count: contentList.filter((i: any) => i.platform === name).length,
+  })).sort((a, b) => b.count - a.count);
+
+  const formatNames = Array.from(new Set(contentList.map((i: any) => String(i.format || '-')))) as string[];
+  const formatCounts = formatNames.filter(n => n !== '-').map(name => ({
+    name,
+    count: contentList.filter((i: any) => i.format === name).length,
+  })).sort((a, b) => b.count - a.count);
+
+  const totalDone = contentList.filter((i: any) => i.checkStatus === 'Selesai').length;
+  const totalProgress = contentList.length - totalDone;
+  const maxStageCount = Math.max(1, ...stageCounts.map(s => s.total));
+  const maxPlatformCount = Math.max(1, ...platformCounts.map(p => p.count));
+  const maxFormatCount = Math.max(1, ...formatCounts.map(f => f.count));
+
+  const calGrid = getMonthGrid(selectedSheet);
+  const itemsByDay: Record<number, any[]> = {};
+  contentList.forEach((item: any) => {
+    if (!item.date || item.date === '-') return;
+    const parts = String(item.date).split('-');
+    if (parts.length < 3) return;
+    const day = parseInt(parts[2], 10);
+    if (isNaN(day) || day < 1) return;
+    if (!itemsByDay[day]) itemsByDay[day] = [];
+    itemsByDay[day].push(item);
+  });
+  const WEEKDAYS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+  const MENU_TITLES: Record<string, string> = {
+    konten: 'Konten',
+    dashboard: 'Dashboard / Ringkasan',
+    kalender: 'Kalender Konten',
+    statistik: 'Statistik Platform',
+  };
+
   return (
     <div style={styles.container}>
       <style dangerouslySetInnerHTML={{ __html: `
@@ -283,7 +345,25 @@ export default function WorkflowWorkspace() {
         </div>
 
         <div style={styles.sidebarContent}>
-          <label style={styles.sectionLabel}>Periode 2026</label>
+          <label style={styles.sectionLabel}>Menu</label>
+          <div style={styles.menuList}>
+            {[
+              { key: 'konten', label: 'Konten' },
+              { key: 'dashboard', label: 'Dashboard' },
+              { key: 'kalender', label: 'Kalender Konten' },
+              { key: 'statistik', label: 'Statistik' },
+            ].map((m) => {
+              const isActive = activeMenu === m.key;
+              return (
+                <button key={m.key} onClick={() => setActiveMenu(m.key as any)} style={{ ...styles.menuButton, ...(isActive ? styles.menuButtonActive : {}) }}>
+                  <span>{m.label}</span>
+                  {isActive && <span style={styles.activeDot}></span>}
+                </button>
+              );
+            })}
+          </div>
+
+          <label style={{ ...styles.sectionLabel, marginTop: '20px' }}>Periode 2026</label>
           <div style={styles.menuList}>
             {finalSheetList.map((n: string) => {
               const isActive = selectedSheet === n;
@@ -313,7 +393,25 @@ export default function WorkflowWorkspace() {
               <button onClick={() => setIsMobileSidebarOpen(false)} style={styles.closeBtn}>✕</button>
             </div>
 
-            <label style={styles.sectionLabel}>Periode 2026</label>
+            <label style={styles.sectionLabel}>Menu</label>
+            <div style={styles.menuList}>
+              {[
+                { key: 'konten', label: 'Konten' },
+                { key: 'dashboard', label: 'Dashboard' },
+                { key: 'kalender', label: 'Kalender Konten' },
+                { key: 'statistik', label: 'Statistik' },
+              ].map((m) => {
+                const isActive = activeMenu === m.key;
+                return (
+                  <button key={m.key} onClick={() => { setActiveMenu(m.key as any); setIsMobileSidebarOpen(false); }} style={{ ...styles.menuButton, ...(isActive ? styles.menuButtonActive : {}) }}>
+                    <span>{m.label}</span>
+                    {isActive && <span style={styles.activeDot}></span>}
+                  </button>
+                );
+              })}
+            </div>
+
+            <label style={{ ...styles.sectionLabel, marginTop: '20px' }}>Periode 2026</label>
             <div style={styles.menuList}>
               {finalSheetList.map((n: string) => {
                 const isActive = selectedSheet === n;
@@ -335,7 +433,7 @@ export default function WorkflowWorkspace() {
           <div>
             <span style={styles.headerSub}>Sistem Estafet Otomatis</span>
             <h2 style={styles.headerTitle}>
-              {selectedSheet.replace('26', ' 2026')} <span style={styles.countBadge}>{contentList.length} Konten</span>
+              {activeMenu === 'konten' ? selectedSheet.replace('26', ' 2026') : MENU_TITLES[activeMenu]} <span style={styles.countBadge}>{contentList.length} Konten</span>
             </h2>
           </div>
 
@@ -348,49 +446,148 @@ export default function WorkflowWorkspace() {
         </header>
 
         <div className="content-area-wrapper" style={styles.contentArea}>
-          <div className="grid-container-cards" style={styles.gridContainer}>
-            {contentList.length === 0 ? (
-              <div style={styles.emptyState}>
-                Belum ada konten aktif di periode ini.<br />
-                <span style={{ fontSize: '11px', color: '#A1A1AA', marginTop: '6px', display: 'inline-block' }}>Klik "+ Input Konten Baru" untuk mulai menambah konten.</span>
-              </div>
-            ) : (
-              contentList.map((item: any, idx: number) => {
-                const isFinished = item.checkStatus === 'Selesai';
+          {activeMenu === 'konten' && (
+            <div className="grid-container-cards" style={styles.gridContainer}>
+              {contentList.length === 0 ? (
+                <div style={styles.emptyState}>
+                  Belum ada konten aktif di periode ini.<br />
+                  <span style={{ fontSize: '11px', color: '#A1A1AA', marginTop: '6px', display: 'inline-block' }}>Klik "+ Input Konten Baru" untuk mulai menambah konten.</span>
+                </div>
+              ) : (
+                contentList.map((item: any, idx: number) => {
+                  const isFinished = item.checkStatus === 'Selesai';
 
-                return (
-                  <div key={idx} style={styles.card}>
-                    <div style={styles.cardHeader}>
-                      <span style={styles.dateBadge}>{item.date}</span>
-                      <button onClick={() => handleOpenEditModal(item)} style={styles.editBtn}>Update Estafet</button>
-                    </div>
+                  return (
+                    <div key={idx} style={styles.card}>
+                      <div style={styles.cardHeader}>
+                        <span style={styles.dateBadge}>{item.date}</span>
+                        <button onClick={() => handleOpenEditModal(item)} style={styles.editBtn}>Update Estafet</button>
+                      </div>
 
-                    <h3 style={styles.cardTitle}>{item.title}</h3>
+                      <h3 style={styles.cardTitle}>{item.title}</h3>
 
-                    <div style={{ ...styles.workflowBadge, backgroundColor: isFinished ? '#DCFCE7' : '#FEF3C7', borderColor: isFinished ? '#86EFAC' : '#FDE68A', color: isFinished ? '#166534' : '#92400E' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 700 }}>{item.stage}</span>
-                        <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', backgroundColor: isFinished ? '#166534' : '#D97706', color: '#FFF' }}>
-                          {item.checkStatus === 'Selesai' ? 'SELESAI' : 'PROSES'}
-                        </span>
+                      <div style={{ ...styles.workflowBadge, backgroundColor: isFinished ? '#DCFCE7' : '#FEF3C7', borderColor: isFinished ? '#86EFAC' : '#FDE68A', color: isFinished ? '#166534' : '#92400E' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700 }}>{item.stage}</span>
+                          <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', backgroundColor: isFinished ? '#166534' : '#D97706', color: '#FFF' }}>
+                            {item.checkStatus === 'Selesai' ? 'SELESAI' : 'PROSES'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={styles.teamGrid}>
+                        <div style={styles.teamBadge}><b>Planner:</b> {item.plannerAndAdmin}</div>
+                        <div style={styles.teamBadge}><b>Copy:</b> {item.copywriter}</div>
+                        <div style={styles.teamBadge}><b>Prod:</b> {item.productionTeam}</div>
+                        <div style={styles.teamBadge}><b>Editor:</b> {item.editor}</div>
+                      </div>
+
+                      <div style={styles.cardFooter}>
+                        <span>{item.platform} ({item.format})</span>
                       </div>
                     </div>
+                  );
+                })
+              )}
+            </div>
+          )}
 
-                    <div style={styles.teamGrid}>
-                      <div style={styles.teamBadge}><b>Planner:</b> {item.plannerAndAdmin}</div>
-                      <div style={styles.teamBadge}><b>Copy:</b> {item.copywriter}</div>
-                      <div style={styles.teamBadge}><b>Prod:</b> {item.productionTeam}</div>
-                      <div style={styles.teamBadge}><b>Editor:</b> {item.editor}</div>
+          {activeMenu === 'dashboard' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="grid-container-cards" style={{ ...styles.gridContainer, gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+                <div style={styles.statCard}>
+                  <span style={styles.statLabel}>Total Konten</span>
+                  <span style={styles.statValue}>{contentList.length}</span>
+                </div>
+                <div style={styles.statCard}>
+                  <span style={styles.statLabel}>Selesai</span>
+                  <span style={{ ...styles.statValue, color: '#166534' }}>{totalDone}</span>
+                </div>
+                <div style={styles.statCard}>
+                  <span style={styles.statLabel}>Proses</span>
+                  <span style={{ ...styles.statValue, color: '#92400E' }}>{totalProgress}</span>
+                </div>
+              </div>
+
+              <div style={styles.dashCard}>
+                <h4 style={styles.dashTitle}>Alur Estafet per Tahap</h4>
+                {stageCounts.map(s => (
+                  <div key={s.name} style={styles.barRow}>
+                    <div style={styles.barLabelRow}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#52525B' }}>{s.name}</span>
+                      <span style={{ fontSize: '11px', color: '#71717A' }}>{s.done}/{s.total} selesai</span>
                     </div>
-
-                    <div style={styles.cardFooter}>
-                      <span>{item.platform} ({item.format})</span>
+                    <div style={styles.barTrack}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, width: `${(s.total / maxStageCount) * 100}%`, height: '8px', borderRadius: '99px', backgroundColor: '#D97706' }} />
+                      <div style={{ position: 'absolute', top: 0, left: 0, width: `${(s.done / maxStageCount) * 100}%`, height: '8px', borderRadius: '99px', backgroundColor: '#10B981' }} />
                     </div>
                   </div>
-                );
-              })
-            )}
-          </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeMenu === 'kalender' && (
+            <div style={styles.dashCard}>
+              <h4 style={styles.dashTitle}>{calGrid.monthName} {calGrid.year}</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+                {WEEKDAYS.map(w => (
+                  <div key={w} style={{ fontSize: '10px', fontWeight: 700, color: '#71717A', textAlign: 'center', padding: '4px 0' }}>{w}</div>
+                ))}
+                {calGrid.cells.map((day, idx) => day === null ? (
+                  <div key={idx} />
+                ) : (
+                  <div key={idx} style={itemsByDay[day] ? styles.calDayActive : styles.calDay}>
+                    <span style={itemsByDay[day] ? styles.calDayNumActive : styles.calDayNum}>{day}</span>
+                    {itemsByDay[day] && itemsByDay[day].slice(0, 2).map((it: any, j: number) => (
+                      <span key={j} style={styles.calDayTitle}>
+                        {it.title.length > 16 ? it.title.slice(0, 16) + '…' : it.title}
+                      </span>
+                    ))}
+                    {itemsByDay[day] && itemsByDay[day].length > 2 && (
+                      <span style={styles.calDayMore}>+{itemsByDay[day].length - 2} lagi</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeMenu === 'statistik' && (
+            <div className="grid-container-cards" style={{ ...styles.gridContainer, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+              <div style={styles.dashCard}>
+                <h4 style={styles.dashTitle}>Distribusi Platform</h4>
+                {platformCounts.length === 0 && <p style={{ fontSize: '12px', color: '#A1A1AA' }}>Belum ada data konten.</p>}
+                {platformCounts.map(p => (
+                  <div key={p.name} style={styles.barRow}>
+                    <div style={styles.barLabelRow}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#52525B' }}>{p.name}</span>
+                      <span style={{ fontSize: '11px', color: '#71717A' }}>{p.count} konten</span>
+                    </div>
+                    <div style={styles.barTrack}>
+                      <div style={{ width: `${(p.count / maxPlatformCount) * 100}%`, height: '8px', borderRadius: '99px', backgroundColor: '#2563EB' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={styles.dashCard}>
+                <h4 style={styles.dashTitle}>Distribusi Format</h4>
+                {formatCounts.length === 0 && <p style={{ fontSize: '12px', color: '#A1A1AA' }}>Belum ada data konten.</p>}
+                {formatCounts.map(f => (
+                  <div key={f.name} style={styles.barRow}>
+                    <div style={styles.barLabelRow}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#52525B' }}>{f.name}</span>
+                      <span style={{ fontSize: '11px', color: '#71717A' }}>{f.count} konten</span>
+                    </div>
+                    <div style={styles.barTrack}>
+                      <div style={{ width: `${(f.count / maxFormatCount) * 100}%`, height: '8px', borderRadius: '99px', backgroundColor: '#3B82F6' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
@@ -659,6 +856,46 @@ const styles: Record<string, React.CSSProperties> = {
     gridColumn: '1 / -1', textAlign: 'center', padding: '64px',
     color: '#9CA3AF', fontSize: '14px',
   },
+
+  // ── View tambahan: Dashboard / Kalender / Statistik ─────────────────────────
+  statCard: {
+    backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E8EAF0',
+    padding: '20px', display: 'flex', flexDirection: 'column', gap: '6px',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
+  },
+  statLabel: {
+    fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
+    letterSpacing: '0.06em', color: '#9CA3AF',
+  },
+  statValue: { fontSize: '28px', fontWeight: 800, color: '#1A1D23', lineHeight: 1 },
+  dashCard: {
+    backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E8EAF0',
+    padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
+  },
+  dashTitle: { fontSize: '14px', fontWeight: 700, color: '#1A1D23', margin: '0 0 16px' },
+  barRow: { display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' },
+  barLabelRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  barTrack: {
+    position: 'relative', height: '8px', borderRadius: '99px',
+    backgroundColor: '#F3F4F6', overflow: 'hidden',
+  },
+  calDay: {
+    minHeight: '72px', backgroundColor: '#F9FAFB', border: '1px solid #F3F4F6',
+    borderRadius: '10px', padding: '6px', display: 'flex',
+    flexDirection: 'column', gap: '3px',
+  },
+  calDayActive: {
+    minHeight: '72px', backgroundColor: '#FFFFFF', border: '1px solid #2563EB',
+    borderRadius: '10px', padding: '6px', display: 'flex',
+    flexDirection: 'column', gap: '3px', boxShadow: '0 2px 8px rgba(37,99,235,0.15)',
+  },
+  calDayNum: { fontSize: '11px', fontWeight: 700, color: '#9CA3AF' },
+  calDayNumActive: { fontSize: '11px', fontWeight: 800, color: '#2563EB' },
+  calDayTitle: {
+    fontSize: '10px', fontWeight: 600, color: '#374151', lineHeight: '1.3',
+    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+  },
+  calDayMore: { fontSize: '9px', fontWeight: 700, color: '#2563EB' },
 
   // ── Modal ───────────────────────────────────────────────────────────────────
   modalOverlay: {
