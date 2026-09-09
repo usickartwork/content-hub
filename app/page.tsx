@@ -13,6 +13,11 @@ const STAGE_NAMES = [
 
 const MONTH_ORDER = ['December26', 'November26', 'October26', 'September26', 'August26'];
 
+const SOCMED_ACCOUNTS = [
+  { platform: 'Instagram', username: 'dreamfieldtacticalsurabaya', url: 'https://www.instagram.com/dreamfieldtacticalsurabaya' },
+  { platform: 'TikTok', username: 'dreamfieldtactical', url: 'https://www.tiktok.com/@dreamfieldtactical' },
+];
+
 const MONTH_MAP: Record<string, number> = {
   January: 0, February: 1, March: 2, April: 3, May: 4, June: 5,
   July: 6, August: 7, September: 8, October: 9, November: 10, December: 11,
@@ -65,6 +70,18 @@ export default function WorkflowWorkspace() {
   
   const [deadline, setDeadline] = useState('2026-09-01');
   const [progress, setProgress] = useState('0%');
+
+  const [reportPlatform, setReportPlatform] = useState('Instagram');
+  const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
+  const [reportFollowers, setReportFollowers] = useState('');
+  const [reportLikes, setReportLikes] = useState('');
+  const [reportComments, setReportComments] = useState('');
+  const [reportShares, setReportShares] = useState('');
+  const [reportViews, setReportViews] = useState('');
+  const [reportReach, setReportReach] = useState('');
+  const [reportNotes, setReportNotes] = useState('');
+  const [reportMsg, setReportMsg] = useState('');
+  const [expandedReport, setExpandedReport] = useState<string | null>(null);
 
   const loadData = async (targetSheet?: string) => {
     try {
@@ -308,7 +325,124 @@ export default function WorkflowWorkspace() {
     konten: 'Konten',
     dashboard: 'Dashboard / Ringkasan',
     kalender: 'Kalender Konten',
-    statistik: 'Statistik Platform',
+    statistik: 'Statistik & Laporan',
+  };
+
+  const socmedReportRows = Array.isArray(data?.sheets?.['SocmedReport']) ? data.sheets['SocmedReport'] : [];
+  let reportHeaderIdx = 0;
+  for (let i = 0; i < socmedReportRows.length; i++) {
+    const c0 = String(socmedReportRows[i][0] || '').toLowerCase();
+    if (c0 === 'date' || c0 === 'tanggal') { reportHeaderIdx = i; break; }
+  }
+  const socmedReports = socmedReportRows.slice(reportHeaderIdx + 1)
+    .map((r: any[], idx: number) => ({
+      id: `${String(r[0] || '')}_${String(r[1] || '')}_${idx}`,
+      date: r[0] ? String(r[0]).split('T')[0] : '-',
+      platform: String(r[1] || '-'),
+      username: String(r[2] || '-'),
+      followers: r[3] !== undefined ? String(r[3]) : '',
+      likes: r[4] !== undefined ? String(r[4]) : '',
+      comments: r[5] !== undefined ? String(r[5]) : '',
+      shares: r[6] !== undefined ? String(r[6]) : '',
+      views: r[7] !== undefined ? String(r[7]) : '',
+      reach: r[8] !== undefined ? String(r[8]) : '',
+      notes: String(r[9] || ''),
+      report: String(r[10] || ''),
+    }))
+    .filter((r: any) => r.platform !== '-')
+    .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date)));
+
+  const platformInfo = (plat: string) => SOCMED_ACCOUNTS.find(a => a.platform === plat);
+
+  const buildSocmedReport = (cur: any, prev: any) => {
+    const n = (v: any) => { const k = parseInt(String(v || '0').replace(/[^0-9]/g, ''), 10); return isNaN(k) ? 0 : k; };
+    const f = n(cur.followers), pf = n(prev?.followers);
+    const likes = n(cur.likes), comments = n(cur.comments), shares = n(cur.shares);
+    const views = n(cur.views), reach = n(cur.reach);
+    const growth = f - pf;
+    const growthPct = pf > 0 ? ((growth / pf) * 100) : 0;
+    const engagementTotal = likes + comments + shares;
+    const engagementRate = f > 0 ? ((engagementTotal / f) * 100) : 0;
+    const lines: string[] = [];
+    lines.push(`LAPORAN SOSIAL MEDIA HARIAN`);
+    lines.push(`Platform: ${cur.platform}`);
+    lines.push(`Akun: @${cur.username}`);
+    lines.push(`Tanggal: ${cur.date}`);
+    lines.push('');
+    lines.push(`1. PERTUMBUHAN FOLLOWERS`);
+    lines.push(`- Followers saat ini: ${f.toLocaleString('id-ID')}`);
+    if (pf > 0) {
+      lines.push(`- Hari sebelumnya: ${pf.toLocaleString('id-ID')}`);
+      lines.push(`- Selisih: ${growth >= 0 ? '+' : ''}${growth.toLocaleString('id-ID')} (${growthPct.toFixed(2)}%)`);
+      lines.push(`  Keterangan: ${growth >= 0 ? 'Mengalami pertumbuhan positif.' : 'Mengalami penurunan, perlu evaluasi konten.'}`);
+    } else {
+      lines.push(`- Belum ada data hari sebelumnya, ini laporan pertama tersimpan.`);
+    }
+    lines.push('');
+    lines.push(`2. PERFORMA KONTEN`);
+    lines.push(`- Total likes: ${likes.toLocaleString('id-ID')}`);
+    lines.push(`- Komentar: ${comments.toLocaleString('id-ID')}`);
+    lines.push(`- Shares/bagikan: ${shares.toLocaleString('id-ID')}`);
+    lines.push(`- Views (TikTok): ${views.toLocaleString('id-ID')}`);
+    lines.push(`- Jangkauan (reach): ${reach.toLocaleString('id-ID')}`);
+    lines.push('');
+    lines.push(`3. TINGKAT ENGAGEMENT`);
+    lines.push(`- Total interaksi (likes+comments+shares): ${engagementTotal.toLocaleString('id-ID')}`);
+    lines.push(`- Estimasi engagement rate: ${engagementRate.toFixed(2)}%`);
+    lines.push(`  ${engagementRate >= 3 ? 'Kategori: SEHAT (di atas 3%).' : engagementRate >= 1 ? 'Kategori: CUKUP (1-3%), masih bisa ditingkatkan.' : 'Kategori: RENDAH (di bawah 1%), perlu perbaikan konten.'}`);
+    lines.push('');
+    lines.push(`4. CATATAN / KENDALA`);
+    lines.push(`- ${cur.notes ? cur.notes : 'Tidak ada catatan.'}`);
+    lines.push('');
+    lines.push(`5. REKOMENDASI`);
+    if (growth < 0 && pf > 0) lines.push(`- Fokus evaluasi penurunan followers; tinjau jadwal posting terakhir.`);
+    if (engagementRate < 1) lines.push(`- Tingkatkan interaksi: gunakan call-to-action, caption tanya jawab, dan balas komentar.`);
+    if (engagementRate >= 3) lines.push(`- Pertahankan konsistensi konten yang sedang efektif.`);
+    if (shares > likes && likes > 0) lines.push(`- Konten banyak di-share: pertimbangkan buat konten sejenis (strategi viral).`);
+    if (reach > f) lines.push(`- Jangkauan melebihi followers: konten sedang tampil di non-followers, manfaatkan momentum.`);
+    if (views > 0 && likes === 0 && comments === 0) lines.push(`- Views tinggi namun interaksi rendah: perbaiki hook di 3 detik pertama.`);
+    lines.push(`- Pantau rutin setiap hari dan bandingkan dengan periode sebelumnya.`);
+    lines.push('');
+    lines.push(`Dibuat otomatis oleh Dream Field Workspace`);
+    return lines.join('\n');
+  };
+
+  const handleSaveSocmedReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reportDate) return;
+    const acc = platformInfo(reportPlatform);
+    if (!acc) return;
+    const currentReports = socmedReports;
+    const prev = currentReports.find((r: any) => r.platform === reportPlatform && r.date < reportDate);
+    const reportText = buildSocmedReport({
+      date: reportDate, platform: reportPlatform, username: acc.username,
+      followers: reportFollowers, likes: reportLikes, comments: reportComments,
+      shares: reportShares, views: reportViews, reach: reportReach, notes: reportNotes,
+    }, prev);
+    setReportMsg('Menyimpan laporan...');
+    try {
+      const res = await fetch('/api/workspace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sheetName: 'SocmedReport',
+          newRowData: [reportDate, reportPlatform, acc.username, reportFollowers, reportLikes, reportComments, reportShares, reportViews, reportReach, reportNotes, reportText],
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setReportMsg('Laporan berhasil disimpan.');
+        setReportFollowers(''); setReportLikes(''); setReportComments('');
+        setReportShares(''); setReportViews(''); setReportReach(''); setReportNotes('');
+        setExpandedReport(reportDate + '_' + reportPlatform);
+        setTimeout(() => setReportMsg(''), 3000);
+        await loadData(selectedSheet);
+      } else {
+        setReportMsg('Gagal: ' + (json.error || 'Unknown'));
+      }
+    } catch (err: any) {
+      setReportMsg('Error: ' + err.toString());
+    }
   };
 
   return (
@@ -554,6 +688,7 @@ export default function WorkflowWorkspace() {
           )}
 
           {activeMenu === 'statistik' && (
+            <>
             <div className="grid-container-cards" style={{ ...styles.gridContainer, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
               <div style={styles.dashCard}>
                 <h4 style={styles.dashTitle}>Distribusi Platform</h4>
@@ -587,6 +722,82 @@ export default function WorkflowWorkspace() {
                 ))}
               </div>
             </div>
+
+            <div style={styles.dashCard}>
+              <h4 style={styles.dashTitle}>Laporan Sosial Media</h4>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                {SOCMED_ACCOUNTS.map(acc => (
+                  <a key={acc.platform} href={acc.url} target="_blank" rel="noreferrer"
+                    style={{ fontSize: '12px', fontWeight: 600, color: '#2563EB', background: '#EFF6FF',
+                      border: '1px solid #BFDBFE', padding: '6px 10px', borderRadius: '10px', textDecoration: 'none' }}>
+                    {acc.platform} · @{acc.username}
+                  </a>
+                ))}
+              </div>
+
+              <form onSubmit={handleSaveSocmedReport}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px', marginBottom: '8px' }}>
+                  <label style={styles.reportLabel}>Platform
+                    <select value={reportPlatform} onChange={e => setReportPlatform(e.target.value)} style={styles.reportInput}>
+                      {SOCMED_ACCOUNTS.map(acc => <option key={acc.platform} value={acc.platform}>{acc.platform}</option>)}
+                    </select>
+                  </label>
+                  <label style={styles.reportLabel}>Tanggal
+                    <input type="date" value={reportDate} onChange={e => setReportDate(e.target.value)} style={styles.reportInput} />
+                  </label>
+                  <label style={styles.reportLabel}>Followers
+                    <input type="number" value={reportFollowers} onChange={e => setReportFollowers(e.target.value)} style={styles.reportInput} placeholder="cth 1250" />
+                  </label>
+                  <label style={styles.reportLabel}>Likes
+                    <input type="number" value={reportLikes} onChange={e => setReportLikes(e.target.value)} style={styles.reportInput} placeholder="cth 45" />
+                  </label>
+                  <label style={styles.reportLabel}>Komentar
+                    <input type="number" value={reportComments} onChange={e => setReportComments(e.target.value)} style={styles.reportInput} placeholder="cth 5" />
+                  </label>
+                  <label style={styles.reportLabel}>Shares
+                    <input type="number" value={reportShares} onChange={e => setReportShares(e.target.value)} style={styles.reportInput} placeholder="cth 3" />
+                  </label>
+                  <label style={styles.reportLabel}>Views
+                    <input type="number" value={reportViews} onChange={e => setReportViews(e.target.value)} style={styles.reportInput} placeholder="cth 800" />
+                  </label>
+                  <label style={styles.reportLabel}>Reach
+                    <input type="number" value={reportReach} onChange={e => setReportReach(e.target.value)} style={styles.reportInput} placeholder="cth 600" />
+                  </label>
+                </div>
+                <label style={styles.reportLabel}>Catatan / Kendala
+                  <textarea value={reportNotes} onChange={e => setReportNotes(e.target.value)} rows={2} style={{ ...styles.reportInput, width: '100%', resize: 'vertical' }} placeholder="cth: konten reels sepatu baru, jam 19.00" />
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                  <button type="submit" style={styles.reportSubmit}>{reportMsg.startsWith('Menyimpan') ? 'Menyimpan...' : 'Simpan Laporan Harian'}</button>
+                  {reportMsg && <span style={{ fontSize: '11px', color: reportMsg.startsWith('Gagal') || reportMsg.startsWith('Error') ? '#DC2626' : '#059669' }}>{reportMsg}</span>}
+                </div>
+              </form>
+            </div>
+
+            <div style={{ ...styles.dashCard, gridColumn: '1 / -1' }}>
+              <h4 style={styles.dashTitle}>Riwayat Laporan</h4>
+              {socmedReports.length === 0 && <p style={{ fontSize: '12px', color: '#A1A1AA' }}>Belum ada laporan. Pastikan sheet "SocmedReport" sudah ada, lalu isi form di atas.</p>}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {socmedReports.map(r => (
+                  <div key={r.id} style={styles.reportItem}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#2563EB' }}>{r.platform}</span>
+                        <span style={{ fontSize: '12px', color: '#374151' }}>@{r.username}</span>
+                        <span style={{ fontSize: '11px', color: '#6B7280' }}>{r.date}</span>
+                        <span style={styles.reportStat}>({r.followers || '0'} followers · {r.likes || '0'} likes · {r.views || '0'} views)</span>
+                      </div>
+                      <button type="button" onClick={() => setExpandedReport(expandedReport === r.id ? null : r.id)}
+                        style={styles.reportToggle}>{expandedReport === r.id ? 'Tutup' : 'Lihat'}</button>
+                    </div>
+                    {expandedReport === r.id && (
+                      <pre style={styles.reportText}>{r.report || '(laporan tersimpan tanpa teks)'}</pre>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            </>
           )}
         </div>
       </main>
@@ -896,6 +1107,13 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
   },
   calDayMore: { fontSize: '9px', fontWeight: 700, color: '#2563EB' },
+  reportLabel: { display: 'flex', flexDirection: 'column' as const, gap: '4px', fontSize: '11px', fontWeight: 600, color: '#374151' },
+  reportInput: { fontSize: '12px', padding: '7px 9px', border: '1px solid #D1D5DB', borderRadius: '8px', outline: 'none', background: '#FFFFFF', color: '#1A1D23' },
+  reportSubmit: { fontSize: '12px', fontWeight: 700, color: '#FFFFFF', backgroundColor: '#2563EB', border: 'none', padding: '9px 16px', borderRadius: '9px', cursor: 'pointer' },
+  reportItem: { border: '1px solid #E8EAF0', borderRadius: '10px', padding: '10px 12px', background: '#FFFFFF' },
+  reportStat: { fontSize: '11px', color: '#6B7280' },
+  reportToggle: { fontSize: '11px', fontWeight: 600, color: '#2563EB', background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '5px 10px', borderRadius: '8px', cursor: 'pointer', whiteSpace: 'nowrap' as const },
+  reportText: { fontSize: '11px', lineHeight: 1.6, color: '#1F2937', background: '#F9FAFB', border: '1px solid #F3F4F6', borderRadius: '8px', padding: '10px', whiteSpace: 'pre-wrap' as const, margin: '8px 0 0' },
 
   // ── Modal ───────────────────────────────────────────────────────────────────
   modalOverlay: {
