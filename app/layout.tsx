@@ -6,6 +6,12 @@ export const metadata: Metadata = {
   description: 'Sistem Manajemen & Estafet Konten Dream Field',
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: {

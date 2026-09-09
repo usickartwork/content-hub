@@ -446,18 +446,32 @@ export default function WorkflowWorkspace() {
   };
 
   return (
-    <div style={styles.container}>
+    <div className="app-container" style={styles.container}>
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @media (max-width: 768px) {
           .desktop-sidebar { display: none !important; }
           .mobile-header-bar { display: flex !important; }
-          .main-header { padding: 14px 16px !important; flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
-          .header-actions-row { width: 100% !important; justify-content: space-between !important; flex-wrap: wrap !important; }
-          .search-input-field { width: 100% !important; }
-          .content-area-wrapper { padding: 16px !important; }
-          .grid-container-cards { grid-template-columns: 1fr !important; }
-          .modal-box-card { max-width: 100% !important; height: 100% !important; max-height: 100vh !important; border-radius: 0 !important; padding: 20px !important; }
+          .app-container { flex-direction: column !important; height: auto !important; min-height: 100vh !important; overflow: visible !important; }
+          .app-main { height: auto !important; min-height: 100vh !important; overflow: visible !important; }
+          .main-header { padding: 12px 14px !important; flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+          .header-actions-row { width: 100% !important; display: flex !important; flex-wrap: wrap !important; gap: 8px !important; justify-content: flex-start !important; }
+          .header-actions-row button, .header-actions-row input { flex-shrink: 1 !important; min-width: 0 !important; }
+          .search-input-field { width: 100% !important; flex: 1 1 100% !important; }
+          .content-area-wrapper { padding: 12px 14px !important; }
+          .grid-container-cards { grid-template-columns: 1fr !important; gap: 12px !important; }
+          .dashboard-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+          .calendar-grid { gap: 3px !important; }
+          .calendar-grid > div { min-width: 0 !important; }
+          .report-form-grid { grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
+          .modal-box-card { max-width: 100% !important; width: 100% !important; height: 100% !important; max-height: 100vh !important; border-radius: 0 !important; padding: 16px !important; }
+          .modal-two-col { grid-template-columns: 1fr !important; }
+          .statistik-grid { grid-template-columns: 1fr !important; }
+          .report-history-item { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; }
+          .mobile-drawer { width: 100% !important; max-width: 100% !important; border-radius: 0 !important; height: 100% !important; max-height: 100vh !important; overflow-y: auto !important; }
+        }
+        @media (max-width: 380px) {
+          .report-form-grid { grid-template-columns: 1fr !important; }
         }
         @media (min-width: 769px) { .mobile-header-bar { display: none !important; } }
       `}} />
@@ -515,7 +529,7 @@ export default function WorkflowWorkspace() {
 
       {isMobileSidebarOpen && (
         <div style={styles.modalOverlay}>
-          <div style={styles.mobileDrawer}>
+          <div className="mobile-drawer" style={styles.mobileDrawer}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={styles.logoBadge}>D</div>
@@ -562,7 +576,7 @@ export default function WorkflowWorkspace() {
         </div>
       )}
 
-      <main style={styles.main}>
+      <main className="app-main" style={styles.main}>
         <header className="main-header" style={styles.header}>
           <div>
             <span style={styles.headerSub}>Sistem Estafet Otomatis</span>
@@ -628,7 +642,7 @@ export default function WorkflowWorkspace() {
 
           {activeMenu === 'dashboard' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="grid-container-cards" style={{ ...styles.gridContainer, gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+              <div className="dashboard-grid" style={{ ...styles.gridContainer, gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
                 <div style={styles.statCard}>
                   <span style={styles.statLabel}>Total Konten</span>
                   <span style={styles.statValue}>{contentList.length}</span>
@@ -664,7 +678,7 @@ export default function WorkflowWorkspace() {
           {activeMenu === 'kalender' && (
             <div style={styles.dashCard}>
               <h4 style={styles.dashTitle}>{calGrid.monthName} {calGrid.year}</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+              <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
                 {WEEKDAYS.map(w => (
                   <div key={w} style={{ fontSize: '10px', fontWeight: 700, color: '#71717A', textAlign: 'center', padding: '4px 0' }}>{w}</div>
                 ))}
@@ -689,7 +703,7 @@ export default function WorkflowWorkspace() {
 
           {activeMenu === 'statistik' && (
             <>
-            <div className="grid-container-cards" style={{ ...styles.gridContainer, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+            <div className="statistik-grid grid-container-cards" style={{ ...styles.gridContainer, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
               <div style={styles.dashCard}>
                 <h4 style={styles.dashTitle}>Distribusi Platform</h4>
                 {platformCounts.length === 0 && <p style={{ fontSize: '12px', color: '#A1A1AA' }}>Belum ada data konten.</p>}
@@ -736,7 +750,7 @@ export default function WorkflowWorkspace() {
               </div>
 
               <form onSubmit={handleSaveSocmedReport}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px', marginBottom: '8px' }}>
+                <div className="report-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px', marginBottom: '8px' }}>
                   <label style={styles.reportLabel}>Platform
                     <select value={reportPlatform} onChange={e => setReportPlatform(e.target.value)} style={styles.reportInput}>
                       {SOCMED_ACCOUNTS.map(acc => <option key={acc.platform} value={acc.platform}>{acc.platform}</option>)}
@@ -780,7 +794,7 @@ export default function WorkflowWorkspace() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {socmedReports.map(r => (
                   <div key={r.id} style={styles.reportItem}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                    <div className="report-history-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '12px', fontWeight: 700, color: '#2563EB' }}>{r.platform}</span>
                         <span style={{ fontSize: '12px', color: '#374151' }}>@{r.username}</span>
@@ -835,7 +849,7 @@ export default function WorkflowWorkspace() {
                 <input type="text" placeholder="Masukkan judul konten..." value={postTitle} onChange={(e) => setPostTitle(e.target.value)} style={styles.input} required />
               </div>
 
-              <div style={styles.rowGrid}>
+              <div className="modal-two-col" style={styles.rowGrid}>
                 <div>
                   <label style={styles.label}>Date (Tanggal Publish)</label>
                   <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={styles.input} required />
@@ -858,7 +872,7 @@ export default function WorkflowWorkspace() {
                   <input type="text" value={plannerAndAdmin} onChange={(e) => setPlannerAndAdmin(e.target.value)} style={styles.input} />
                 </div>
 
-                <div style={{ ...styles.rowGrid, marginTop: '8px' }}>
+                <div className="modal-two-col" style={{ ...styles.rowGrid, marginTop: '8px' }}>
                   <div>
                     <label style={styles.label}>Copywriter</label>
                     <input type="text" value={copywriter} onChange={(e) => setCopywriter(e.target.value)} style={styles.input} />
@@ -869,7 +883,7 @@ export default function WorkflowWorkspace() {
                   </div>
                 </div>
 
-                <div style={{ ...styles.rowGrid, marginTop: '8px' }}>
+                <div className="modal-two-col" style={{ ...styles.rowGrid, marginTop: '8px' }}>
                   <div>
                     <label style={styles.label}>Graphic Designer</label>
                     <input type="text" value={designer} onChange={(e) => setDesigner(e.target.value)} style={styles.input} />
