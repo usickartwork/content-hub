@@ -16,10 +16,11 @@
  ************************************************************/
 const CONTENT_CALENDAR_CONFIG = [
   { member: 'Filius (Planner)',  calendarId: 'GANTI_EMAIL_FILIUS@gmail.com' },
-  { member: 'Raka (Copywriter)', calendarId: 'GANTI_EMAIL_RAKA@gmail.com' },
-  { member: 'Tim Produksi',      calendarId: 'GANTI_EMAIL_TIM_PRODUKSI@gmail.com' },
-  { member: 'Kevin (Designer)',  calendarId: 'GANTI_EMAIL_KEVIN@gmail.com' },
-  { member: 'Alya (Editor)',     calendarId: 'GANTI_EMAIL_ALYA@gmail.com' },
+  // Tambahkan kembali anggota lain di sini setelah pengujian selesai:
+  // { member: 'Raka (Copywriter)', calendarId: 'GANTI_EMAIL_RAKA@gmail.com' },
+  // { member: 'Tim Produksi',      calendarId: 'GANTI_EMAIL_TIM_PRODUKSI@gmail.com' },
+  // { member: 'Kevin (Designer)',  calendarId: 'GANTI_EMAIL_KEVIN@gmail.com' },
+  // { member: 'Alya (Editor)',     calendarId: 'GANTI_EMAIL_ALYA@gmail.com' },
 ];
 
 // Mulai event jam berapa & durasi (jam). Hanya menampilkan tanggal, jam menyesuaikan.
