@@ -208,8 +208,8 @@ export default function WorkflowWorkspace() {
   
   let headerIdx = 0;
   for (let i = 0; i < currentRows.length; i++) {
-    const rowStr = JSON.stringify(currentRows[i]);
-    if (rowStr.includes('Date') || rowStr.includes('Post Title') || rowStr.includes('Content ID')) {
+    const firstCell = String(currentRows[i][0] || '').trim().toLowerCase();
+    if (firstCell === 'content id' || firstCell === 'id') {
       headerIdx = i;
       break;
     }
@@ -389,12 +389,8 @@ export default function WorkflowWorkspace() {
             ) : (
               contentList.map((item: any, idx: number) => {
                 const itemStage = item.parsedStage || STAGE_NAMES[0];
-                const itemStageIdx = STAGE_NAMES.indexOf(itemStage);
-                const myAccountStageIdx = STAGE_NAMES.indexOf(currentAccount.stageName);
 
-                const isMyTurn = currentAccount.name === 'Admin / Planner' 
-                  ? (itemStage === '1. Concept' || itemStage === '5. Done / Posted')
-                  : (itemStageIdx === myAccountStageIdx);
+                const isMyTurn = currentAccount.allowedStages.includes(itemStage);
 
                 const isFinished = item.checkStatus === 'Selesai';
 
