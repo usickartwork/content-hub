@@ -142,31 +142,33 @@ function deleteContentEvents_(id) {
  ************************************************************/
 function syncAllContentToCalendars() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var monthSheets = ['August26', 'September26', 'October26', 'November26', 'December26']
-    .filter(function (n) { return ss.getSheetByName(n) !== null; });
+  var sheets = ss.getSheets(); // scan SEMUA sheet (periode bulan, timeline, dll)
 
   var total = 0;
   var syncedTotal = 0;
   var skippedTotal = 0;
+  var processedSheets = [];
+  var headerNames = ['content id', 'id']; // nama-nama kolom ID yang dikenali
 
-  monthSheets.forEach(function (name) {
-    var sheet = ss.getSheetByName(name);
+  sheets.forEach(function (sheet) {
+    var name = sheet.getName();
     var values = sheet.getDataRange().getValues();
 
-    // Cari baris header (kolom pertama 'Content ID' / 'id')
+    // Cari baris header di sheet tsb (kolom pertama 'Content ID' / 'id')
     var headerRow = -1;
     for (var i = 0; i < values.length; i++) {
       var first = String(values[i][0] || '').trim().toLowerCase();
-      if (first === 'content id' || first === 'id') {
+      if (headerNames.indexOf(first) !== -1) {
         headerRow = i;
         break;
       }
     }
     if (headerRow === -1) {
-      console.log('Sheet ' + name + ': header tidak ditemukan, dilewati');
+      console.log('Sheet ' + name + ': tidak ada kolom Content ID, dilewati');
       return;
     }
 
+    processedSheets.push(name);
     for (var j = headerRow + 1; j < values.length; j++) {
       total++;
       var res = syncContentToCalendars_(values[j]);
@@ -175,6 +177,7 @@ function syncAllContentToCalendars() {
     }
   });
 
-  Logger.log('Sync selesai -> Total baris: ' + total + ', Event dibuat/diupdate: ' + syncedTotal + ', Dilewati: ' + skippedTotal);
-  return { total: total, synced: syncedTotal, skipped: skippedTotal };
+  Logger.log('Sync selesai -> Sheet: ' + processedSheets.join(', ') +
+    ' | Baris: ' + total + ' | Event dibuat/diupdate: ' + syncedTotal + ' | Dilewati: ' + skippedTotal);
+  return { sheets: processedSheets, total: total, synced: syncedTotal, skipped: skippedTotal };
 }
