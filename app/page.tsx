@@ -13,14 +13,6 @@ const STAGE_NAMES = [
 
 const MONTH_ORDER = ['December26', 'November26', 'October26', 'September26', 'August26'];
 
-// Definisi Akun & Tahapan Estafet Maju
-const ACCOUNTS = [
-  { name: 'Admin / Planner', stageName: '1. Concept', allowedStages: ['1. Concept', '2. Copywriting', '5. Done / Posted'] },
-  { name: 'Raka (Copywriter)', stageName: '2. Copywriting', allowedStages: ['2. Copywriting', '3. Produksi / Syuting'] },
-  { name: 'Tim Produksi / Syuting', stageName: '3. Produksi / Syuting', allowedStages: ['3. Produksi / Syuting', '4. Visual & Editing'] },
-  { name: 'Kevin & Alya (Design/Editor)', stageName: '4. Visual & Editing', allowedStages: ['4. Visual & Editing', '5. Done / Posted'] },
-];
-
 export default function WorkflowWorkspace() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -29,8 +21,6 @@ export default function WorkflowWorkspace() {
   const [searchQuery, setSearchQuery] = useState('');
   const [message, setMessage] = useState('');
   
-  const [currentAccount, setCurrentAccount] = useState(ACCOUNTS[0]);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,7 +74,6 @@ export default function WorkflowWorkspace() {
   }, []);
 
   const handleOpenAddModal = () => {
-    if (currentAccount.name !== 'Admin / Planner') return;
     setIsEditing(false);
     setContentId('CONT-' + Math.floor(100 + Math.random() * 900));
     setWeek('Week 1');
@@ -277,15 +266,12 @@ export default function WorkflowWorkspace() {
         @media (min-width: 769px) { .mobile-header-bar { display: none !important; } }
       `}} />
 
-      <div className="mobile-header-bar" style={styles.mobileHeaderBar}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button onClick={() => setIsMobileSidebarOpen(true)} style={styles.hamburgerBtn}>☰</button>
-          <span style={{ fontSize: '14px', fontWeight: 700, color: '#09090B' }}>Dream Field</span>
+<div className="mobile-header-bar" style={styles.mobileHeaderBar}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button onClick={() => setIsMobileSidebarOpen(true)} style={styles.hamburgerBtn}>☰</button>
+            <span style={{ fontSize: '14px', fontWeight: 700, color: '#09090B' }}>Dream Field</span>
+          </div>
         </div>
-        <div onClick={() => setIsLoginModalOpen(true)} style={{ fontSize: '11px', fontWeight: 600, color: '#10B981', backgroundColor: '#ECFDF5', padding: '4px 10px', borderRadius: '8px', border: '1px solid #A7F3D0' }}>
-          {currentAccount.name.split(' ')[0]} 👤
-        </div>
-      </div>
 
       <aside className="desktop-sidebar" style={styles.sidebar}>
         <div style={styles.sidebarHeader}>
@@ -293,14 +279,6 @@ export default function WorkflowWorkspace() {
           <div>
             <h1 style={styles.brandTitle}>Dream Field</h1>
             <p style={styles.brandSubtitle}>Workspace Jobdesk</p>
-          </div>
-        </div>
-
-        <div style={styles.accountBox}>
-          <span style={styles.accountLabel}>Akun Jobdesk Aktif:</span>
-          <div style={styles.accountCard} onClick={() => setIsLoginModalOpen(true)}>
-            <div style={{ fontSize: '12px', fontWeight: 700, color: '#09090B' }}>{currentAccount.name}</div>
-            <div style={{ fontSize: '10px', color: '#10B981', fontWeight: 600, marginTop: '2px' }}>Ganti Akun</div>
           </div>
         </div>
 
@@ -335,14 +313,6 @@ export default function WorkflowWorkspace() {
               <button onClick={() => setIsMobileSidebarOpen(false)} style={styles.closeBtn}>✕</button>
             </div>
 
-            <div style={{ marginBottom: '20px' }}>
-              <span style={styles.accountLabel}>Akun Jobdesk Aktif:</span>
-              <div style={styles.accountCard} onClick={() => { setIsMobileSidebarOpen(false); setIsLoginModalOpen(true); }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#09090B' }}>{currentAccount.name}</div>
-                <div style={{ fontSize: '10px', color: '#10B981', fontWeight: 600, marginTop: '2px' }}>Ganti Akun</div>
-              </div>
-            </div>
-
             <label style={styles.sectionLabel}>Periode 2026</label>
             <div style={styles.menuList}>
               {finalSheetList.map((n: string) => {
@@ -373,9 +343,7 @@ export default function WorkflowWorkspace() {
             {message && <span style={{ fontSize: '12px', fontWeight: 600, color: '#10B981' }}>{message}</span>}
             <button onClick={() => loadData(selectedSheet)} style={styles.secondaryButton}>Refresh</button>
             <input className="search-input-field" type="text" placeholder="Cari judul atau tim..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={styles.searchInput} />
-            {currentAccount.name === 'Admin / Planner' && (
-              <button onClick={handleOpenAddModal} style={styles.primaryButton}>+ Input Konten Baru</button>
-            )}
+            <button onClick={handleOpenAddModal} style={styles.primaryButton}>+ Input Konten Baru</button>
           </div>
         </header>
 
@@ -388,21 +356,13 @@ export default function WorkflowWorkspace() {
               </div>
             ) : (
               contentList.map((item: any, idx: number) => {
-                const itemStage = item.parsedStage || STAGE_NAMES[0];
-
-                const isMyTurn = currentAccount.allowedStages.includes(itemStage);
-
                 const isFinished = item.checkStatus === 'Selesai';
 
                 return (
                   <div key={idx} style={styles.card}>
                     <div style={styles.cardHeader}>
                       <span style={styles.dateBadge}>{item.date}</span>
-                      {isMyTurn ? (
-                        <button onClick={() => handleOpenEditModal(item)} style={styles.editBtn}>Update Estafet</button>
-                      ) : (
-                        <span style={styles.lockedBadge}>Menunggu Giliran</span>
-                      )}
+                      <button onClick={() => handleOpenEditModal(item)} style={styles.editBtn}>Update Estafet</button>
                     </div>
 
                     <h3 style={styles.cardTitle}>{item.title}</h3>
@@ -434,35 +394,13 @@ export default function WorkflowWorkspace() {
         </div>
       </main>
 
-      {isLoginModalOpen && (
-        <div style={styles.modalOverlay}>
-          <div style={{ ...styles.modalCard, maxWidth: '400px' }}>
-            <div style={styles.modalHeader}>
-              <div>
-                <h3 style={styles.modalTitle}>Pilih Akun Jobdesk</h3>
-                <p style={styles.modalSub}>Sistem estafet otomatis menyesuaikan hak akses akun.</p>
-              </div>
-              <button onClick={() => setIsLoginModalOpen(false)} style={styles.closeBtn}>✕</button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {ACCOUNTS.map((acc, i) => (
-                <button key={i} onClick={() => { setCurrentAccount(acc); setIsLoginModalOpen(false); }} style={{ padding: '12px 16px', borderRadius: '12px', border: currentAccount.name === acc.name ? '2px solid #09090B' : '1px solid #E4E4E7', backgroundColor: currentAccount.name === acc.name ? '#F4F4F5' : '#FFFFFF', textAlign: 'left', cursor: 'pointer', fontWeight: 600, fontSize: '13px', color: '#09090B', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>{acc.name}</span>
-                  {currentAccount.name === acc.name && <span style={{ fontSize: '11px', color: '#10B981' }}>Aktif</span>}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {isModalOpen && (
         <div style={styles.modalOverlay}>
           <div className="modal-box-card" style={styles.modalCard}>
             <div style={styles.modalHeader}>
               <div>
                 <h3 style={styles.modalTitle}>{isEditing ? 'Update Estafet Checklist' : 'Input Konten Baru'}</h3>
-                <p style={styles.modalSub}>{isEditing ? `Sedang dikerjakan oleh: ${currentAccount.name}` : 'Konten baru otomatis dimulai dari 1. Concept.'}</p>
+                <p style={styles.modalSub}>{isEditing ? 'Update tahap pengerjaan konten.' : 'Konten baru otomatis dimulai dari 1. Concept.'}</p>
               </div>
               <button onClick={() => setIsModalOpen(false)} style={styles.closeBtn}>✕</button>
             </div>
@@ -562,9 +500,6 @@ const styles: Record<string, React.CSSProperties> = {
   logoBadge: { width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#09090B', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px' },
   brandTitle: { fontSize: '13px', fontWeight: 700, margin: 0, color: '#09090B' },
   brandSubtitle: { fontSize: '11px', color: '#71717A', margin: 0 },
-  accountBox: { padding: '16px', borderBottom: '1px solid #E4E4E7' },
-  accountLabel: { fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: '#A1A1AA', display: 'block', marginBottom: '6px', letterSpacing: '0.05em' },
-  accountCard: { backgroundColor: '#FAFAFA', border: '1px solid #E4E4E7', padding: '10px 12px', borderRadius: '10px', cursor: 'pointer' },
   sidebarContent: { padding: '20px 16px', overflowY: 'auto', flex: 1 },
   sectionLabel: { fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#A1A1AA', paddingLeft: '8px', display: 'block', marginBottom: '8px' },
   menuList: { display: 'flex', flexDirection: 'column', gap: '4px' },
@@ -586,7 +521,6 @@ const styles: Record<string, React.CSSProperties> = {
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   dateBadge: { fontSize: '11px', fontWeight: 600, color: '#52525B', backgroundColor: '#F4F4F5', padding: '4px 8px', borderRadius: '6px' },
   editBtn: { backgroundColor: '#09090B', color: '#FFFFFF', border: 'none', padding: '5px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer' },
-  lockedBadge: { fontSize: '11px', fontWeight: 500, color: '#71717A', backgroundColor: '#F4F4F5', padding: '4px 8px', borderRadius: '6px', border: '1px solid #E4E4E7' },
   cardTitle: { fontSize: '14px', fontWeight: 700, color: '#09090B', margin: '2px 0', lineHeight: '1.4' },
   workflowBadge: { padding: '10px 12px', borderRadius: '10px', border: '1px solid' },
   teamGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', borderTop: '1px solid #F4F4F5', paddingTop: '10px' },
