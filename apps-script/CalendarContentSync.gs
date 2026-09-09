@@ -38,21 +38,33 @@ const CONTENT_EVENT_DURATION_HOURS = 1;
  *   syncContentToCalendars_(body.newRowData);
  ************************************************************/
 
+// Mengubah nilai tanggal (Date object dari Sheets ATAU string "2026-09-01")
+// menjadi Date mulai event. Mengembalikan null bila tidak valid.
+function parseEventDate_(val) {
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return null;
+    return new Date(val.getFullYear(), val.getMonth(), val.getDate(), CONTENT_EVENT_START_HOUR, 0, 0, 0);
+  }
+  var s = String(val || '').trim();
+  if (!s) return null;
+  var d = new Date(s.split('T')[0] + 'T00:00:00');
+  if (isNaN(d.getTime())) return null;
+  d.setHours(CONTENT_EVENT_START_HOUR, 0, 0, 0);
+  return d;
+}
+
 // Membuat / update event konten ke 5 kalender. Menghapus event lama yang
 // ber-Content ID sama di tanggal tsb (anti duplikat saat edit/ulang simpan).
 function syncContentToCalendars_(row) {
   var id = String(row[0] || '').trim();
   var week = String(row[1] || '').trim();
-  var dateRaw = String(row[2] || '').trim();
+  var start = parseEventDate_(row[2]);
   var title = String(row[5] || '').trim();
   var stage = String(row[6] || '').trim();
   var platform = String(row[7] || '').trim();
 
-  if (!id || !dateRaw || !title) return { synced: 0, skipped: 0 };
+  if (!id || !start || !title) return { synced: 0, skipped: 0, invalid: true };
 
-  var datePart = dateRaw.split('T')[0];
-  var start = new Date(datePart + 'T00:00:00');
-  start.setHours(CONTENT_EVENT_START_HOUR, 0, 0, 0);
   var end = new Date(start.getTime() + CONTENT_EVENT_DURATION_HOURS * 3600 * 1000);
 
   var description = [
@@ -97,7 +109,7 @@ function syncContentToCalendars_(row) {
     }
   });
 
-  return { synced: synced, skipped: skipped };
+  return { synced: synced, skipped: skipped, invalid: false };
 }
 
 // Menghapus semua event ber-Content ID tertentu (dipakai bila konten dihapus).
@@ -147,6 +159,7 @@ function syncAllContentToCalendars() {
   var total = 0;
   var syncedTotal = 0;
   var skippedTotal = 0;
+  var invalidTotal = 0;
   var processedSheets = [];
   var headerNames = ['content id', 'id']; // nama-nama kolom ID yang dikenali
 
@@ -174,10 +187,12 @@ function syncAllContentToCalendars() {
       var res = syncContentToCalendars_(values[j]);
       syncedTotal += res.synced;
       skippedTotal += res.skipped;
+      if (res.invalid) invalidTotal++;
     }
   });
 
   Logger.log('Sync selesai -> Sheet: ' + processedSheets.join(', ') +
-    ' | Baris: ' + total + ' | Event dibuat/diupdate: ' + syncedTotal + ' | Dilewati: ' + skippedTotal);
-  return { sheets: processedSheets, total: total, synced: syncedTotal, skipped: skippedTotal };
+    ' | Baris: ' + total + ' | Event dibuat/diupdate: ' + syncedTotal +
+    ' | Dilewati (kalender): ' + skippedTotal + ' | Baris tanpa judul/tanggal valid: ' + invalidTotal);
+  return { sheets: processedSheets, total: total, synced: syncedTotal, skipped: skippedTotal, invalid: invalidTotal };
 }
