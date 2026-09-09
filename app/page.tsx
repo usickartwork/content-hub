@@ -486,56 +486,216 @@ export default function WorkflowWorkspace() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { display: 'flex', height: '100vh', backgroundColor: '#FAFAFA', color: '#09090B', fontFamily: 'system-ui, sans-serif', overflow: 'hidden', position: 'relative' },
-  fullScreenLoader: { display: 'flex', height: '100vh', width: '100vw', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FAFAFA', position: 'fixed', inset: 0, zIndex: 999 },
-  loaderCard: { backgroundColor: '#FFFFFF', padding: '36px 48px', borderRadius: '24px', border: '1px solid #E4E4E7', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)' },
-  spinner: { width: '36px', height: '36px', border: '3px solid #E4E4E7', borderTop: '3px solid #09090B', borderRadius: '50%', animation: 'spin 0.8s linear infinite' },
-  loaderTitle: { fontSize: '15px', fontWeight: 700, color: '#09090B', margin: 0 },
-  loaderSub: { fontSize: '12px', color: '#71717A', margin: 0 },
-  mobileHeaderBar: { height: '56px', backgroundColor: '#FFFFFF', borderBottom: '1px solid #E4E4E7', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40 },
-  hamburgerBtn: { background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#09090B', padding: '4px 8px' },
-  mobileDrawer: { backgroundColor: '#FFFFFF', borderRadius: '16px', width: '90%', maxWidth: '320px', padding: '24px', border: '1px solid #E4E4E7', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' },
-  sidebar: { width: '260px', backgroundColor: '#FFFFFF', borderRight: '1px solid #E4E4E7', display: 'flex', flexDirection: 'column', zIndex: 10 },
-  sidebarHeader: { padding: '20px 24px', borderBottom: '1px solid #E4E4E7', display: 'flex', alignItems: 'center', gap: '12px' },
-  logoBadge: { width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#09090B', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px' },
-  brandTitle: { fontSize: '13px', fontWeight: 700, margin: 0, color: '#09090B' },
-  brandSubtitle: { fontSize: '11px', color: '#71717A', margin: 0 },
-  sidebarContent: { padding: '20px 16px', overflowY: 'auto', flex: 1 },
-  sectionLabel: { fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#A1A1AA', paddingLeft: '8px', display: 'block', marginBottom: '8px' },
-  menuList: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  menuButton: { width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 500, border: 'none', background: 'transparent', cursor: 'pointer', color: '#52525B', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  menuButtonActive: { backgroundColor: '#09090B', color: '#FFFFFF', fontWeight: 600 },
-  activeDot: { width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#34D399' },
+  // ── Layout ─────────────────────────────────────────────────────────────────
+  container: {
+    display: 'flex', height: '100vh', overflow: 'hidden', position: 'relative',
+    backgroundColor: '#F5F6FA', color: '#1A1D23',
+    fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif",
+  },
+
+  // ── Full-screen loader ──────────────────────────────────────────────────────
+  fullScreenLoader: {
+    display: 'flex', height: '100vh', width: '100vw', alignItems: 'center',
+    justifyContent: 'center', backgroundColor: '#F5F6FA', position: 'fixed', inset: 0, zIndex: 999,
+  },
+  loaderCard: {
+    backgroundColor: '#FFFFFF', padding: '40px 52px', borderRadius: '24px',
+    border: '1px solid #E8EAF0', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', gap: '16px',
+    boxShadow: '0 8px 32px rgba(37,99,235,0.08), 0 1px 4px rgba(0,0,0,0.06)',
+  },
+  spinner: {
+    width: '36px', height: '36px',
+    border: '3px solid #E8EAF0', borderTop: '3px solid #2563EB',
+    borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+  },
+  loaderTitle: { fontSize: '15px', fontWeight: 700, color: '#1A1D23', margin: 0 },
+  loaderSub: { fontSize: '12px', color: '#6B7280', margin: 0 },
+
+  // ── Mobile header ───────────────────────────────────────────────────────────
+  mobileHeaderBar: {
+    height: '56px', backgroundColor: '#FFFFFF', borderBottom: '1px solid #E8EAF0',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '0 16px', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40,
+  },
+  hamburgerBtn: {
+    background: 'transparent', border: 'none', fontSize: '20px',
+    cursor: 'pointer', color: '#1A1D23', padding: '4px 8px',
+  },
+  mobileDrawer: {
+    backgroundColor: '#FFFFFF', borderRadius: '20px', width: '90%', maxWidth: '320px',
+    padding: '28px', border: '1px solid #E8EAF0',
+    boxShadow: '0 20px 48px rgba(0,0,0,0.12)',
+  },
+
+  // ── Sidebar ─────────────────────────────────────────────────────────────────
+  sidebar: {
+    width: '240px', backgroundColor: '#FFFFFF', borderRight: '1px solid #E8EAF0',
+    display: 'flex', flexDirection: 'column', zIndex: 10,
+    boxShadow: '2px 0 12px rgba(0,0,0,0.03)',
+  },
+  sidebarHeader: {
+    padding: '22px 22px 20px', borderBottom: '1px solid #F3F4F6',
+    display: 'flex', alignItems: 'center', gap: '12px',
+  },
+  logoBadge: {
+    width: '34px', height: '34px', borderRadius: '10px',
+    background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)',
+    color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontWeight: 800, fontSize: '15px', flexShrink: 0,
+    boxShadow: '0 4px 12px rgba(37,99,235,0.35)',
+  },
+  brandTitle: { fontSize: '14px', fontWeight: 700, margin: 0, color: '#1A1D23' },
+  brandSubtitle: { fontSize: '11px', color: '#9CA3AF', margin: 0, fontWeight: 500 },
+  sidebarContent: { padding: '20px 14px', overflowY: 'auto', flex: 1 },
+  sectionLabel: {
+    fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
+    letterSpacing: '0.08em', color: '#9CA3AF', paddingLeft: '10px',
+    display: 'block', marginBottom: '8px',
+  },
+  menuList: { display: 'flex', flexDirection: 'column', gap: '3px' },
+  menuButton: {
+    width: '100%', textAlign: 'left', padding: '10px 14px', borderRadius: '12px',
+    fontSize: '13px', fontWeight: 500, border: 'none', background: 'transparent',
+    cursor: 'pointer', color: '#6B7280', display: 'flex', justifyContent: 'space-between',
+    alignItems: 'center', transition: 'all 0.15s ease',
+  },
+  menuButtonActive: {
+    backgroundColor: '#2563EB', color: '#FFFFFF', fontWeight: 600,
+    boxShadow: '0 4px 14px rgba(37,99,235,0.30)',
+  },
+  activeDot: {
+    width: '7px', height: '7px', borderRadius: '50%',
+    backgroundColor: 'rgba(255,255,255,0.75)',
+  },
+
+  // ── Main content ────────────────────────────────────────────────────────────
   main: { flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' },
-  header: { padding: '20px 32px', backgroundColor: '#FFFFFF', borderBottom: '1px solid #E4E4E7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 },
-  headerSub: { fontSize: '10px', textTransform: 'uppercase', color: '#71717A', letterSpacing: '0.05em', fontWeight: 600 },
-  headerTitle: { fontSize: '16px', fontWeight: 700, color: '#09090B', margin: '2px 0 0 0', display: 'flex', alignItems: 'center', gap: '8px' },
-  countBadge: { fontSize: '11px', fontWeight: 500, color: '#71717A', backgroundColor: '#F4F4F5', padding: '2px 8px', borderRadius: '20px', border: '1px solid #E4E4E7' },
-  headerActions: { boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: '12px' },
-  searchInput: { width: '220px', padding: '8px 14px', backgroundColor: '#FAFAFA', border: '1px solid #E4E4E7', borderRadius: '10px', fontSize: '12px', outline: 'none', color: '#09090B' },
-  primaryButton: { backgroundColor: '#09090B', color: '#FFFFFF', padding: '8px 16px', borderRadius: '10px', fontSize: '12px', fontWeight: 600, border: 'none', cursor: 'pointer' },
-  secondaryButton: { backgroundColor: '#FAFAFA', color: '#09090B', padding: '8px 16px', borderRadius: '10px', fontSize: '12px', fontWeight: 600, border: '1px solid #E4E4E7', cursor: 'pointer' },
-  contentArea: { flex: '1', padding: '24px 32px', overflowY: 'auto', backgroundColor: '#FAFAFA' },
-  gridContainer: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))', gap: '16px' },
-  card: { backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E4E4E7', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' },
+  header: {
+    padding: '18px 28px', backgroundColor: '#FFFFFF', borderBottom: '1px solid #E8EAF0',
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20,
+    boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+  },
+  headerSub: {
+    fontSize: '11px', textTransform: 'uppercase', color: '#9CA3AF',
+    letterSpacing: '0.08em', fontWeight: 600,
+  },
+  headerTitle: {
+    fontSize: '18px', fontWeight: 700, color: '#1A1D23',
+    margin: '3px 0 0 0', display: 'flex', alignItems: 'center', gap: '10px',
+  },
+  countBadge: {
+    fontSize: '11px', fontWeight: 600, color: '#6B7280',
+    backgroundColor: '#F3F4F6', padding: '3px 10px', borderRadius: '99px',
+    border: '1px solid #E5E7EB',
+  },
+  headerActions: {
+    boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: '10px',
+  },
+  searchInput: {
+    width: '220px', padding: '9px 14px', backgroundColor: '#F9FAFB',
+    border: '1px solid #E5E7EB', borderRadius: '12px', fontSize: '13px',
+    outline: 'none', color: '#1A1D23', fontFamily: 'inherit',
+  },
+
+  // ── Buttons ─────────────────────────────────────────────────────────────────
+  primaryButton: {
+    background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)',
+    color: '#FFFFFF', padding: '9px 18px', borderRadius: '12px',
+    fontSize: '13px', fontWeight: 600, border: 'none', cursor: 'pointer',
+    boxShadow: '0 4px 14px rgba(37,99,235,0.30)',
+    letterSpacing: '0.01em',
+  },
+  secondaryButton: {
+    backgroundColor: '#FFFFFF', color: '#374151', padding: '9px 16px',
+    borderRadius: '12px', fontSize: '13px', fontWeight: 600,
+    border: '1px solid #E5E7EB', cursor: 'pointer',
+  },
+
+  // ── Content area ────────────────────────────────────────────────────────────
+  contentArea: {
+    flex: '1', padding: '24px 28px', overflowY: 'auto', backgroundColor: '#F5F6FA',
+  },
+  gridContainer: {
+    display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px',
+  },
+
+  // ── Cards ───────────────────────────────────────────────────────────────────
+  card: {
+    backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E8EAF0',
+    padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
+    transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+  },
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  dateBadge: { fontSize: '11px', fontWeight: 600, color: '#52525B', backgroundColor: '#F4F4F5', padding: '4px 8px', borderRadius: '6px' },
-  editBtn: { backgroundColor: '#09090B', color: '#FFFFFF', border: 'none', padding: '5px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer' },
-  cardTitle: { fontSize: '14px', fontWeight: 700, color: '#09090B', margin: '2px 0', lineHeight: '1.4' },
-  workflowBadge: { padding: '10px 12px', borderRadius: '10px', border: '1px solid' },
-  teamGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', borderTop: '1px solid #F4F4F5', paddingTop: '10px' },
-  teamBadge: { fontSize: '11px', color: '#52525B', backgroundColor: '#FAFAFA', padding: '4px 8px', borderRadius: '6px', border: '1px solid #F4F4F5' },
-  cardFooter: { fontSize: '11px', fontWeight: 600, color: '#71717A', borderTop: '1px solid #F4F4F5', paddingTop: '8px' },
-  emptyState: { gridColumn: '1 / -1', textAlign: 'center', padding: '48px', color: '#A1A1AA', fontSize: '13px' },
-  modalOverlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 },
-  modalCard: { backgroundColor: '#FFFFFF', borderRadius: '24px', width: '100%', maxWidth: '480px', maxHeight: '90vh', padding: '28px', border: '1px solid #E4E4E7', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', overflowY: 'auto' },
-  modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' },
-  modalTitle: { fontSize: '14px', fontWeight: 700, color: '#09090B', margin: 0 },
-  modalSub: { fontSize: '11px', color: '#71717A', margin: '2px 0 0 0' },
-  closeBtn: { background: '#F4F4F5', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', fontWeight: 600, color: '#52525B' },
-  form: { display: 'flex', flexDirection: 'column', gap: '14px' },
-  label: { fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: '#52525B', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' },
-  input: { width: '100%', padding: '9px 12px', backgroundColor: '#FAFAFA', border: '1px solid #E4E4E7', borderRadius: '10px', fontSize: '12px', outline: 'none', color: '#09090B', boxSizing: 'border-box' },
+  dateBadge: {
+    fontSize: '11px', fontWeight: 600, color: '#6B7280',
+    backgroundColor: '#F3F4F6', padding: '4px 10px', borderRadius: '8px',
+    border: '1px solid #E5E7EB',
+  },
+  editBtn: {
+    background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)',
+    color: '#FFFFFF', border: 'none', padding: '6px 12px', borderRadius: '8px',
+    fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+    boxShadow: '0 2px 8px rgba(37,99,235,0.25)',
+  },
+  cardTitle: {
+    fontSize: '14px', fontWeight: 700, color: '#1A1D23', margin: '2px 0', lineHeight: '1.4',
+  },
+  workflowBadge: { padding: '10px 14px', borderRadius: '12px', border: '1px solid' },
+  teamGrid: {
+    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px',
+    borderTop: '1px solid #F3F4F6', paddingTop: '12px',
+  },
+  teamBadge: {
+    fontSize: '11px', color: '#6B7280', backgroundColor: '#F9FAFB',
+    padding: '5px 9px', borderRadius: '8px', border: '1px solid #F3F4F6',
+  },
+  cardFooter: {
+    fontSize: '11px', fontWeight: 600, color: '#9CA3AF',
+    borderTop: '1px solid #F3F4F6', paddingTop: '10px',
+  },
+  emptyState: {
+    gridColumn: '1 / -1', textAlign: 'center', padding: '64px',
+    color: '#9CA3AF', fontSize: '14px',
+  },
+
+  // ── Modal ───────────────────────────────────────────────────────────────────
+  modalOverlay: {
+    position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.45)',
+    backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', zIndex: 50,
+  },
+  modalCard: {
+    backgroundColor: '#FFFFFF', borderRadius: '24px', width: '100%',
+    maxWidth: '480px', maxHeight: '90vh', padding: '30px',
+    border: '1px solid #E8EAF0',
+    boxShadow: '0 24px 64px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.06)',
+    overflowY: 'auto',
+  },
+  modalHeader: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+    marginBottom: '22px',
+  },
+  modalTitle: { fontSize: '15px', fontWeight: 700, color: '#1A1D23', margin: 0 },
+  modalSub: { fontSize: '12px', color: '#9CA3AF', margin: '3px 0 0 0' },
+  closeBtn: {
+    background: '#F3F4F6', border: '1px solid #E5E7EB', width: '30px', height: '30px',
+    borderRadius: '50%', cursor: 'pointer', fontWeight: 700, color: '#6B7280',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px',
+  },
+  form: { display: 'flex', flexDirection: 'column', gap: '16px' },
+  label: {
+    fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: '#6B7280',
+    display: 'block', marginBottom: '5px', letterSpacing: '0.06em',
+  },
+  input: {
+    width: '100%', padding: '10px 13px', backgroundColor: '#F9FAFB',
+    border: '1px solid #E5E7EB', borderRadius: '12px', fontSize: '13px',
+    outline: 'none', color: '#1A1D23', boxSizing: 'border-box', fontFamily: 'inherit',
+  },
   rowGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' },
-  modalFooter: { display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }
+  modalFooter: {
+    display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '14px',
+  },
 };
