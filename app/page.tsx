@@ -226,7 +226,6 @@ export default function WorkflowWorkspace() {
     setProductionTeam(item.raw[14] || 'Filius & Team');
     setDesigner(item.raw[15] || 'Kevin');
     setEditor(item.raw[16] || 'Alya');
-    setDeadline(item.raw[17] ? String(item.raw[17]).split('T')[0] : item.date);
     setDeadline(item.uploadDate || (item.raw[17] ? formatSpreadsheetDate(item.raw[17]) : item.date));
     setProgress(item.raw[18] || '0%');
     setItemSheetName(item.sheetName || (selectedSheet === 'all' ? 'September26' : selectedSheet));
@@ -327,16 +326,51 @@ export default function WorkflowWorkspace() {
   targetSheetsToParse.forEach((sheetName: string) => {
     const currentRows = data?.sheets?.[sheetName] || [];
     let headerIdx = -1;
+    const colMap = {
+      id: 0,
+      week: 1,
+      date: 2,
+      prodTitle: 5,
+      status: 6,
+      platform: 7,
+      format: 8,
+      uploadTitle: 10,
+      planner: 13,
+      copywriter: 14,
+      designer: 15,
+      editor: 16,
+      admin: 17,
+      deadline: 18,
+    };
+
     for (let i = 0; i < currentRows.length; i++) {
-      const rowSlice = currentRows[i].slice(0, 10).map((c: any) => String(c || '').trim().toLowerCase());
-      if (rowSlice.some((c: string) => c === 'content id' || c === 'id' || c === 'post title' || c === 'judul')) {
+      const rowSlice = currentRows[i].slice(0, 15).map((c: any) => String(c || '').trim().toLowerCase());
+      if (rowSlice.some((c: string) => c === 'content id' || c === 'id' || c === 'post title' || c === 'judul' || c === 'timeline produksi')) {
         headerIdx = i;
+        currentRows[i].forEach((c: any, colIdx: number) => {
+          const h = String(c || '').trim().toLowerCase();
+          if (h === 'content id' || h === 'id') colMap.id = colIdx;
+          else if (h === 'week') colMap.week = colIdx;
+          else if (h === 'date' || h === 'tanggal') colMap.date = colIdx;
+          else if (h.includes('produksi') || h === 'post title' || h === 'judul') colMap.prodTitle = colIdx;
+          else if (h.includes('upload') && h.includes('timeline')) colMap.uploadTitle = colIdx;
+          else if (h === 'status') colMap.status = colIdx;
+          else if (h === 'platform') colMap.platform = colIdx;
+          else if (h === 'format') colMap.format = colIdx;
+          else if (h.includes('planner')) colMap.planner = colIdx;
+          else if (h.includes('copywriter')) colMap.copywriter = colIdx;
+          else if (h.includes('designer')) colMap.designer = colIdx;
+          else if (h.includes('editor')) colMap.editor = colIdx;
+          else if (h.includes('admin')) colMap.admin = colIdx;
+          else if (h.includes('deadline')) colMap.deadline = colIdx;
+        });
         break;
       }
     }
+
     const rows = currentRows.slice(headerIdx !== -1 ? headerIdx + 1 : 1);
     rows.forEach((r: any[]) => {
-      let rawStatus = String(r[6] || '').trim();
+      let rawStatus = String(r[colMap.status] || '').trim();
       let parsedStage = STAGE_NAMES[0];
       let parsedCheck = 'Proses';
 
@@ -352,31 +386,78 @@ export default function WorkflowWorkspace() {
         parsedCheck = (rawStatus.includes('Selesai') || rawStatus.includes('Done')) ? 'Selesai' : 'Proses';
       }
 
-      let title = r[5] ? String(r[5]).trim() : '';
-      if (!title || title === '-' || title.toLowerCase() === 'not started') {
-        title = r[4] ? String(r[4]).trim() : '';
+      let prodTitle = String(r[colMap.prodTitle] || '').trim();
+      if (prodTitle === '-' || prodTitle.toLowerCase() === 'not started') prodTitle = '';
+
+      let uploadTitle = colMap.uploadTitle < r.length ? String(r[colMap.uploadTitle] || '').trim() : '';
+      if (uploadTitle === '-' || uploadTitle.toLowerCase() === 'not started') uploadTitle = '';
+
+      // Fallback jika keduanya kosong, periksa kolom 4 (Keperluan / Agenda)
+      if (!prodTitle && !uploadTitle) {
+        const alt = String(r[4] || '').trim();
+        if (alt && alt !== '-' && alt.toLowerCase() !== 'not started') {
+          prodTitle = alt;
+        }
       }
 
-      if (title && title !== '-' && title.toLowerCase() !== 'not started') {
-        const prodDate = formatSpreadsheetDate(r[2]);
-        const upDate = formatSpreadsheetDate(r[17]);
+      const prodDate = formatSpreadsheetDate(r[colMap.date]);
+      const upDate = formatSpreadsheetDate(r[colMap.deadline] || r[colMap.date]);
+      const contentId = r[colMap.id] || '-';
+      const platform = r[colMap.platform] || '-';
+      const format = r[colMap.format] || '-';
+      const planner = r[colMap.planner] || '-';
+      const copywriter = r[colMap.copywriter] || '-';
+      const prodTeam = r[colMap.designer - 1] || r[14] || '-';
+      const designer = r[colMap.designer] || '-';
+      const editor = r[colMap.editor] || '-';
+
+      // 1. Konten Timeline Produksi
+      if (prodTitle) {
         allParsedItems.push({
-          id: r[0] || '-',
-          week: r[1] || 'Week 1',
+          id: contentId,
+          week: r[colMap.week] || 'Week 1',
           date: prodDate,
           uploadDate: upDate && upDate !== '-' ? upDate : '',
-          title: title,
+          title: prodTitle,
+          timelineType: 'produksi',
           stage: parsedStage,
           checkStatus: parsedCheck,
-          platform: r[7] || '-',
-          format: r[8] || '-',
-          plannerAndAdmin: r[12] || '-',
-          copywriter: r[13] || '-',
-          productionTeam: r[14] || '-',
-          designer: r[15] || '-',
-          editor: r[16] || '-',
+          platform: platform,
+          format: format,
+          plannerAndAdmin: planner,
+          copywriter: copywriter,
+          productionTeam: prodTeam,
+          designer: designer,
+          editor: editor,
           deadline: upDate && upDate !== '-' ? upDate : prodDate,
-          progress: r[18] || '0%',
+          progress: r[colMap.deadline + 1] || '0%',
+          raw: r,
+          parsedStage: parsedStage,
+          parsedCheck: parsedCheck,
+          sheetName: sheetName
+        });
+      }
+
+      // 2. Konten Timeline Upload
+      if (uploadTitle) {
+        allParsedItems.push({
+          id: prodTitle ? `${contentId}-UP` : contentId,
+          week: r[colMap.week] || 'Week 1',
+          date: upDate && upDate !== '-' ? upDate : prodDate,
+          uploadDate: upDate && upDate !== '-' ? upDate : prodDate,
+          title: uploadTitle,
+          timelineType: 'upload',
+          stage: parsedStage,
+          checkStatus: parsedCheck,
+          platform: platform,
+          format: format,
+          plannerAndAdmin: planner,
+          copywriter: copywriter,
+          productionTeam: prodTeam,
+          designer: designer,
+          editor: editor,
+          deadline: upDate && upDate !== '-' ? upDate : prodDate,
+          progress: r[colMap.deadline + 1] || '0%',
           raw: r,
           parsedStage: parsedStage,
           parsedCheck: parsedCheck,
@@ -418,32 +499,13 @@ export default function WorkflowWorkspace() {
   const calGrid = getMonthGrid(selectedSheet);
   const itemsByDay: Record<number, any[]> = {};
   contentList.forEach((item: any) => {
-    if (!item.date || item.date === '-') return;
-    const parts = String(item.date).split('-');
-    if (parts.length < 3) return;
-    const day = parseInt(parts[2], 10);
-    if (isNaN(day) || day < 1) return;
-    if (!itemsByDay[day]) itemsByDay[day] = [];
-    itemsByDay[day].push(item);
-    // 1. Jadwal Produksi / Syuting
     if (item.date && item.date !== '-') {
       const parts = String(item.date).split('-');
       if (parts.length >= 3) {
         const day = parseInt(parts[2], 10);
         if (!isNaN(day) && day >= 1) {
           if (!itemsByDay[day]) itemsByDay[day] = [];
-          itemsByDay[day].push({ ...item, type: 'produksi' });
-        }
-      }
-    }
-    // 2. Jadwal Upload (Timeline Upload)
-    if (item.uploadDate && item.uploadDate !== '-' && item.uploadDate !== item.date) {
-      const parts = String(item.uploadDate).split('-');
-      if (parts.length >= 3) {
-        const day = parseInt(parts[2], 10);
-        if (!isNaN(day) && day >= 1) {
-          if (!itemsByDay[day]) itemsByDay[day] = [];
-          itemsByDay[day].push({ ...item, type: 'upload' });
+          itemsByDay[day].push(item);
         }
       }
     }
@@ -806,20 +868,16 @@ export default function WorkflowWorkspace() {
                   return (
                     <div key={idx} style={styles.card}>
                       <div className="card-header" style={styles.cardHeader}>
-                        <span style={styles.dateBadge}>
-                          {selectedSheet === 'all' && item.sheetName ? `${item.sheetName.replace('26', ' 2026')} · ` : ''}
-                          {item.date}
-                        </span>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                          <span style={styles.dateBadge} title="Jadwal Produksi / Syuting">
+                          <span style={{
+                            ...styles.dateBadge,
+                            backgroundColor: item.timelineType === 'upload' ? '#ECFDF5' : '#EFF6FF',
+                            color: item.timelineType === 'upload' ? '#047857' : '#1D4ED8',
+                            borderColor: item.timelineType === 'upload' ? '#A7F3D0' : '#BFDBFE'
+                          }} title={item.timelineType === 'upload' ? 'Timeline Upload / Tayang' : 'Timeline Produksi / Syuting'}>
                             {selectedSheet === 'all' && item.sheetName ? `${item.sheetName.replace('26', ' 2026')} · ` : ''}
-                            🎬 Prod: {item.date}
+                            {item.timelineType === 'upload' ? `🚀 Upload: ${item.date}` : `🎬 Prod: ${item.date}`}
                           </span>
-                          {item.uploadDate && item.uploadDate !== '-' && (
-                            <span style={{ ...styles.dateBadge, backgroundColor: '#ECFDF5', color: '#047857', borderColor: '#A7F3D0' }} title="Jadwal Upload / Tayang (Timeline Upload)">
-                              🚀 Up: {item.uploadDate}
-                            </span>
-                          )}
                         </div>
                         <button onClick={() => handleOpenEditModal(item)} style={styles.editBtn}>Update Estafet</button>
                       </div>
@@ -919,7 +977,7 @@ export default function WorkflowWorkspace() {
                   <div key={idx} style={itemsByDay[day] ? styles.calDayActive : styles.calDay}>
                     <span style={itemsByDay[day] ? styles.calDayNumActive : styles.calDayNum}>{day}</span>
                     {itemsByDay[day] && itemsByDay[day].slice(0, 3).map((it: any, j: number) => {
-                      const isUp = it.type === 'upload';
+                      const isUp = it.timelineType === 'upload';
                       return (
                         <span key={j} style={{
                           ...styles.calDayTitle,
@@ -1119,7 +1177,6 @@ export default function WorkflowWorkspace() {
 
               <div className="modal-two-col" style={styles.rowGrid}>
                 <div>
-                  <label style={styles.label}>Date (Tanggal Publish)</label>
                   <label style={styles.label}>🎬 Jadwal Produksi / Syuting</label>
                   <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={styles.input} required />
                 </div>
