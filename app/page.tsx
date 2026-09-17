@@ -67,6 +67,20 @@ function getMonthGrid(sheetName: string) {
   return { monthName, year, cells };
 }
 
+function formatSpreadsheetDate(val: any): string {
+  if (!val || val === '-') return '-';
+  if (typeof val === 'number' && val > 30000 && val < 70000) {
+    const d = new Date((val - 25569) * 86400 * 1000);
+    return !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : String(val);
+  }
+  const s = String(val).trim();
+  if (!isNaN(Number(s)) && Number(s) > 30000 && Number(s) < 70000) {
+    const d = new Date((Number(s) - 25569) * 86400 * 1000);
+    return !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : s;
+  }
+  return s.split('T')[0];
+}
+
 export default function WorkflowWorkspace() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -129,7 +143,8 @@ export default function WorkflowWorkspace() {
       const json = await res.json();
       if (json && json.success) {
         const count = json.synced ?? json.syncedTotal ?? 0;
-        setMessage(`Berhasil sync ${count} event ke kalender tim!`);
+        const deleted = json.deleted ? ` (${json.deleted} event lama dibersihkan)` : '';
+        setMessage(`Berhasil sync ${count} event ke kalender tim${deleted}!`);
       } else {
         setMessage('Gagal: ' + (json.error || 'Pastikan izin Google Calendar sudah di-Allow di Apps Script'));
       }
@@ -212,6 +227,7 @@ export default function WorkflowWorkspace() {
     setDesigner(item.raw[15] || 'Kevin');
     setEditor(item.raw[16] || 'Alya');
     setDeadline(item.raw[17] ? String(item.raw[17]).split('T')[0] : item.date);
+    setDeadline(item.uploadDate || (item.raw[17] ? formatSpreadsheetDate(item.raw[17]) : item.date));
     setProgress(item.raw[18] || '0%');
     setItemSheetName(item.sheetName || (selectedSheet === 'all' ? 'September26' : selectedSheet));
     setIsModalOpen(true);
@@ -311,14 +327,18 @@ export default function WorkflowWorkspace() {
   targetSheetsToParse.forEach((sheetName: string) => {
     const currentRows = data?.sheets?.[sheetName] || [];
     let headerIdx = 0;
+    let headerIdx = -1;
     for (let i = 0; i < currentRows.length; i++) {
       const firstCell = String(currentRows[i][0] || '').trim().toLowerCase();
       if (firstCell === 'content id' || firstCell === 'id') {
+      const rowSlice = currentRows[i].slice(0, 10).map((c: any) => String(c || '').trim().toLowerCase());
+      if (rowSlice.some((c: string) => c === 'content id' || c === 'id' || c === 'post title' || c === 'judul')) {
         headerIdx = i;
         break;
       }
     }
     const rows = currentRows.slice(headerIdx + 1);
+    const rows = currentRows.slice(headerIdx !== -1 ? headerIdx + 1 : 1);
     rows.forEach((r: any[]) => {
       let rawStatus = String(r[6] || '').trim();
       let parsedStage = STAGE_NAMES[0];
@@ -337,13 +357,39 @@ export default function WorkflowWorkspace() {
       }
 
       const title = r[5] ? String(r[5]).trim() : '';
+      let title = r[5] ? String(r[5]).trim() : '';
+      if (!title || title === '-' || title.toLowerCase() === 'not started') {
+        title = r[4] ? String(r[4]).trim() : '';
+      }
+
       if (title && title !== '-' && title.toLowerCase() !== 'not started') {
+        const prodDate = formatSpreadsheetDate(r[2]);
+        const upDate = formatSpreadsheetDate(r[17]);
         allParsedItems.push({
           id: r[0] || '-', week: r[1] || 'Week 1', date: r[2] ? String(r[2]).split('T')[0] : '-',
           title: title, stage: parsedStage, checkStatus: parsedCheck,
           platform: r[7] || '-', format: r[8] || '-', plannerAndAdmin: r[12] || '-', copywriter: r[13] || '-',
           productionTeam: r[14] || '-', designer: r[15] || '-', editor: r[16] || '-',
           raw: r, parsedStage: parsedStage, parsedCheck: parsedCheck,
+          id: r[0] || '-',
+          week: r[1] || 'Week 1',
+          date: prodDate,
+          uploadDate: upDate && upDate !== '-' ? upDate : '',
+          title: title,
+          stage: parsedStage,
+          checkStatus: parsedCheck,
+          platform: r[7] || '-',
+          format: r[8] || '-',
+          plannerAndAdmin: r[12] || '-',
+          copywriter: r[13] || '-',
+          productionTeam: r[14] || '-',
+          designer: r[15] || '-',
+          editor: r[16] || '-',
+          deadline: upDate && upDate !== '-' ? upDate : prodDate,
+          progress: r[18] || '0%',
+          raw: r,
+          parsedStage: parsedStage,
+          parsedCheck: parsedCheck,
           sheetName: sheetName
         });
       }
@@ -389,6 +435,28 @@ export default function WorkflowWorkspace() {
     if (isNaN(day) || day < 1) return;
     if (!itemsByDay[day]) itemsByDay[day] = [];
     itemsByDay[day].push(item);
+    // 1. Jadwal Produksi / Syuting
+    if (item.date && item.date !== '-') {
+      const parts = String(item.date).split('-');
+      if (parts.length >= 3) {
+        const day = parseInt(parts[2], 10);
+        if (!isNaN(day) && day >= 1) {
+          if (!itemsByDay[day]) itemsByDay[day] = [];
+          itemsByDay[day].push({ ...item, type: 'produksi' });
+        }
+      }
+    }
+    // 2. Jadwal Upload (Timeline Upload)
+    if (item.uploadDate && item.uploadDate !== '-' && item.uploadDate !== item.date) {
+      const parts = String(item.uploadDate).split('-');
+      if (parts.length >= 3) {
+        const day = parseInt(parts[2], 10);
+        if (!isNaN(day) && day >= 1) {
+          if (!itemsByDay[day]) itemsByDay[day] = [];
+          itemsByDay[day].push({ ...item, type: 'upload' });
+        }
+      }
+    }
   });
   const WEEKDAYS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
   const MENU_TITLES: Record<string, string> = {
@@ -752,6 +820,17 @@ export default function WorkflowWorkspace() {
                           {selectedSheet === 'all' && item.sheetName ? `${item.sheetName.replace('26', ' 2026')} · ` : ''}
                           {item.date}
                         </span>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                          <span style={styles.dateBadge} title="Jadwal Produksi / Syuting">
+                            {selectedSheet === 'all' && item.sheetName ? `${item.sheetName.replace('26', ' 2026')} · ` : ''}
+                            🎬 Prod: {item.date}
+                          </span>
+                          {item.uploadDate && item.uploadDate !== '-' && (
+                            <span style={{ ...styles.dateBadge, backgroundColor: '#ECFDF5', color: '#047857', borderColor: '#A7F3D0' }} title="Jadwal Upload / Tayang (Timeline Upload)">
+                              🚀 Up: {item.uploadDate}
+                            </span>
+                          )}
+                        </div>
                         <button onClick={() => handleOpenEditModal(item)} style={styles.editBtn}>Update Estafet</button>
                       </div>
 
@@ -856,6 +935,22 @@ export default function WorkflowWorkspace() {
                     ))}
                     {itemsByDay[day] && itemsByDay[day].length > 2 && (
                       <span style={styles.calDayMore}>+{itemsByDay[day].length - 2} lagi</span>
+                    {itemsByDay[day] && itemsByDay[day].slice(0, 3).map((it: any, j: number) => {
+                      const isUp = it.type === 'upload';
+                      return (
+                        <span key={j} style={{
+                          ...styles.calDayTitle,
+                          backgroundColor: isUp ? '#ECFDF5' : '#EFF6FF',
+                          color: isUp ? '#047857' : '#1D4ED8',
+                          border: isUp ? '1px solid #A7F3D0' : '1px solid #BFDBFE'
+                        }}>
+                          {isUp ? '🚀 ' : '🎬 '}
+                          {it.title.length > 14 ? it.title.slice(0, 14) + '…' : it.title}
+                        </span>
+                      );
+                    })}
+                    {itemsByDay[day] && itemsByDay[day].length > 3 && (
+                      <span style={styles.calDayMore}>+{itemsByDay[day].length - 3} lagi</span>
                     )}
                   </div>
                 ))}
@@ -1042,8 +1137,16 @@ export default function WorkflowWorkspace() {
               <div className="modal-two-col" style={styles.rowGrid}>
                 <div>
                   <label style={styles.label}>Date (Tanggal Publish)</label>
+                  <label style={styles.label}>🎬 Jadwal Produksi / Syuting</label>
                   <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={styles.input} required />
                 </div>
+                <div>
+                  <label style={styles.label}>🚀 Jadwal Upload (Timeline Upload)</label>
+                  <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} style={styles.input} />
+                </div>
+              </div>
+
+              <div className="modal-two-col" style={{ ...styles.rowGrid, marginTop: '8px' }}>
                 <div>
                   <label style={styles.label}>Platform</label>
                   <select value={platform} onChange={(e) => setPlatform(e.target.value)} style={styles.input}>
@@ -1051,6 +1154,16 @@ export default function WorkflowWorkspace() {
                     <option value="TikTok">TikTok</option>
                     <option value="YouTube">YouTube</option>
                     <option value="All">All</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={styles.label}>Format Konten</label>
+                  <select value={format} onChange={(e) => setFormat(e.target.value)} style={styles.input}>
+                    <option value="Reels">Reels</option>
+                    <option value="TikTok">TikTok Video</option>
+                    <option value="Carousel">Carousel</option>
+                    <option value="Single Post">Single Post</option>
+                    <option value="Story">Story</option>
                   </select>
                 </div>
               </div>
