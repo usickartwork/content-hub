@@ -400,8 +400,9 @@ export default function WorkflowWorkspace() {
         }
       }
 
-      const prodDate = formatSpreadsheetDate(r[colMap.date]);
-      const upDate = formatSpreadsheetDate(r[colMap.deadline] || r[colMap.date]);
+      const rowDate = formatSpreadsheetDate(r[colMap.date]);
+      if (!rowDate || rowDate === '-') return;
+
       const contentId = r[colMap.id] || '-';
       const platform = r[colMap.platform] || '-';
       const format = r[colMap.format] || '-';
@@ -411,13 +412,13 @@ export default function WorkflowWorkspace() {
       const designer = r[colMap.designer] || '-';
       const editor = r[colMap.editor] || '-';
 
-      // 1. Konten Timeline Produksi
+      // 1. Konten Timeline Produksi (waktu dari tanggal baris ini)
       if (prodTitle) {
         allParsedItems.push({
           id: contentId,
           week: r[colMap.week] || 'Week 1',
-          date: prodDate,
-          uploadDate: upDate && upDate !== '-' ? upDate : '',
+          date: rowDate,
+          uploadDate: rowDate,
           title: prodTitle,
           timelineType: 'produksi',
           stage: parsedStage,
@@ -429,7 +430,7 @@ export default function WorkflowWorkspace() {
           productionTeam: prodTeam,
           designer: designer,
           editor: editor,
-          deadline: upDate && upDate !== '-' ? upDate : prodDate,
+          deadline: rowDate,
           progress: r[colMap.deadline + 1] || '0%',
           raw: r,
           parsedStage: parsedStage,
@@ -438,13 +439,13 @@ export default function WorkflowWorkspace() {
         });
       }
 
-      // 2. Konten Timeline Upload
+      // 2. Konten Timeline Upload (waktu sebaris sama baris timeline upload)
       if (uploadTitle) {
         allParsedItems.push({
           id: prodTitle ? `${contentId}-UP` : contentId,
           week: r[colMap.week] || 'Week 1',
-          date: upDate && upDate !== '-' ? upDate : prodDate,
-          uploadDate: upDate && upDate !== '-' ? upDate : prodDate,
+          date: rowDate,
+          uploadDate: rowDate,
           title: uploadTitle,
           timelineType: 'upload',
           stage: parsedStage,
@@ -456,7 +457,7 @@ export default function WorkflowWorkspace() {
           productionTeam: prodTeam,
           designer: designer,
           editor: editor,
-          deadline: upDate && upDate !== '-' ? upDate : prodDate,
+          deadline: rowDate,
           progress: r[colMap.deadline + 1] || '0%',
           raw: r,
           parsedStage: parsedStage,
@@ -499,13 +500,26 @@ export default function WorkflowWorkspace() {
   const calGrid = getMonthGrid(selectedSheet);
   const itemsByDay: Record<number, any[]> = {};
   contentList.forEach((item: any) => {
+    // 1. Jadwal Produksi / Syuting
     if (item.date && item.date !== '-') {
       const parts = String(item.date).split('-');
       if (parts.length >= 3) {
         const day = parseInt(parts[2], 10);
         if (!isNaN(day) && day >= 1) {
           if (!itemsByDay[day]) itemsByDay[day] = [];
+          itemsByDay[day].push({ ...item, type: 'produksi' });
           itemsByDay[day].push(item);
+        }
+      }
+    }
+    // 2. Jadwal Upload (Timeline Upload)
+    if (item.uploadDate && item.uploadDate !== '-' && item.uploadDate !== item.date) {
+      const parts = String(item.uploadDate).split('-');
+      if (parts.length >= 3) {
+        const day = parseInt(parts[2], 10);
+        if (!isNaN(day) && day >= 1) {
+          if (!itemsByDay[day]) itemsByDay[day] = [];
+          itemsByDay[day].push({ ...item, type: 'upload' });
         }
       }
     }

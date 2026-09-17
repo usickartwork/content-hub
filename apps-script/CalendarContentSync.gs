@@ -3,15 +3,14 @@
  * -----------------------------------------------------------------
  * File ini adalah KODE LENGKAP untuk Google Apps Script (Code.gs).
  * 
- * ATURAN TIMELINE PRODUKSI & TIMELINE UPLOAD:
- * 1. Setiap baris di spreadsheet yang memiliki "Timeline Produksi" (Kolom 5) 
- *    dianggap sebagai KONTEN PRODUKSI.
- * 2. Setiap baris yang memiliki "Timeline Upload" (Kolom 10) 
- *    JUGA DIANGGAP SEBAGAI KONTEN UPLOAD!
- * 3. Keduanya muncul sebagai konten di dashboard dan otomatis masuk ke Google Calendar 5 anggota:
+ * ATURAN WAKTU SEBARIS (SINGLE ROW DATE):
+ * 1. Setiap baris di spreadsheet mewakili satu tanggal (Kolom Date / Kolom C).
+ * 2. Jadwal Produksi (Kolom 5) ➡️ Mengambil tanggal dari baris tersebut (Jam 09:00).
+ * 3. Jadwal Timeline Upload (Kolom 10) ➡️ JUGA MENGAMBIL TANGGAL DARI BARIS TERSEBUT (Jam 17:00).
+ *    (Tidak lagi mengambil dari deadline, sehingga tanggalnya 100% tepat sebaris).
+ * 4. Keduanya otomatis masuk ke Google Calendar 5 anggota:
  *    - 🎬 [PRODUKSI] Judul Konten (Jam 09:00)
  *    - 🚀 [UPLOAD] Judul Konten (Jam 17:00)
- * 4. Pembersihan otomatis: event lama yang tidak ada di spreadsheet akan dihapus.
  * 5. Event pribadi anggota tim AMAN & TIDAK DIHAPUS.
  ************************************************************/
 
@@ -69,7 +68,6 @@ function doPost(e) {
       body = JSON.parse(e.postData.contents);
     }
     
-    // Trigger dari tombol "📅 Sync Kalender" di Web
     if (body.action === 'sync_all') {
       var syncResult = syncAllContentToCalendars();
       return ContentService
@@ -98,7 +96,6 @@ function doPost(e) {
       sheet = ss.insertSheet(sheetName);
     }
 
-    // Sheet Khusus SocmedReport
     if (sheetName === 'SocmedReport') {
       var data = sheet.getDataRange().getValues();
       var targetDate = String(newRowData[0] || '').trim();
@@ -125,7 +122,6 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    // Sheet Konten Bulanan (August26, September26, dll)
     var contentId = String(newRowData[0] || '').trim();
     var allRows = sheet.getDataRange().getValues();
     var existingRowIdx = -1;
@@ -144,7 +140,6 @@ function doPost(e) {
       sheet.appendRow(newRowData);
     }
 
-    // Otomatis sinkronkan konten (Produksi & Upload) ke kalender 5 anggota
     var calResult = { synced: 0, skipped: 0 };
     try {
       calResult = syncContentToCalendars_(newRowData);
@@ -167,23 +162,20 @@ function doPost(e) {
 }
 
 /************************************************************
- * 4. HELPER: Parse Tanggal (Mendukung Date, Excel Serial, String)
+ * 4. HELPER: Parse Tanggal (Date, Excel Serial, String)
  ************************************************************/
-function parseEventDate_(val, defaultHour) {
+function parseEventDate_(val) {
   if (!val || val === '-') return null;
-  var hour = typeof defaultHour === 'number' ? defaultHour : PROD_EVENT_START_HOUR;
 
-  // Objek Date
   if (val instanceof Date) {
     if (isNaN(val.getTime())) return null;
-    return new Date(val.getFullYear(), val.getMonth(), val.getDate(), hour, 0, 0);
+    return new Date(val.getFullYear(), val.getMonth(), val.getDate(), 0, 0, 0);
   }
 
-  // Angka serial Excel (misal 46266)
   if (typeof val === 'number' && val > 30000 && val < 70000) {
     var dExcel = new Date((val - 25569) * 86400 * 1000);
     if (!isNaN(dExcel.getTime())) {
-      return new Date(dExcel.getFullYear(), dExcel.getMonth(), dExcel.getDate(), hour, 0, 0);
+      return new Date(dExcel.getFullYear(), dExcel.getMonth(), dExcel.getDate(), 0, 0, 0);
     }
   }
 
@@ -193,39 +185,40 @@ function parseEventDate_(val, defaultHour) {
   if (!isNaN(Number(s)) && Number(s) > 30000 && Number(s) < 70000) {
     var dExcelStr = new Date((Number(s) - 25569) * 86400 * 1000);
     if (!isNaN(dExcelStr.getTime())) {
-      return new Date(dExcelStr.getFullYear(), dExcelStr.getMonth(), dExcelStr.getDate(), hour, 0, 0);
+      return new Date(dExcelStr.getFullYear(), dExcelStr.getMonth(), dExcelStr.getDate(), 0, 0, 0);
     }
   }
 
-  // String YYYY-MM-DD
   var datePart = s.split('T')[0];
   var parts = datePart.split('-');
   if (parts.length === 3) {
     var year = parseInt(parts[0], 10);
     var month = parseInt(parts[1], 10) - 1;
     var day = parseInt(parts[2], 10);
-    var d = new Date(year, month, day, hour, 0, 0);
+    var d = new Date(year, month, day, 0, 0, 0);
     if (!isNaN(d.getTime())) return d;
   }
 
   var fallback = new Date(datePart);
   if (!isNaN(fallback.getTime())) {
-    fallback.setHours(hour, 0, 0, 0);
-    return fallback;
+    return new Date(fallback.getFullYear(), fallback.getMonth(), fallback.getDate(), 0, 0, 0);
   }
 
   return null;
 }
 
 /************************************************************
- * 5. SYNC 1 BARIS (PRODUKSI & TIMELINE UPLOAD) KE 5 KALENDER
+ * 5. SYNC 1 BARIS (PRODUKSI & TIMELINE UPLOAD SEBARIS) KE 5 KALENDER
  ************************************************************/
 function syncContentToCalendars_(row) {
   var id = String(row[0] || '').trim();
   var week = String(row[1] || '').trim();
-  var prodDate = parseEventDate_(row[2], PROD_EVENT_START_HOUR);
-  var uploadDate = parseEventDate_(row[18] || row[17] || row[2], UPLOAD_EVENT_START_HOUR);
-  
+  var rowDate = parseEventDate_(row[2]);
+  if (!rowDate) return { synced: 0, skipped: 0 };
+
+  var prodDate = new Date(rowDate.getFullYear(), rowDate.getMonth(), rowDate.getDate(), PROD_EVENT_START_HOUR, 0, 0);
+  var uploadDate = new Date(rowDate.getFullYear(), rowDate.getMonth(), rowDate.getDate(), UPLOAD_EVENT_START_HOUR, 0, 0);
+
   var prodTitle = String(row[5] || '').trim();
   if (prodTitle === '-' || prodTitle.toLowerCase() === 'not started') prodTitle = '';
 
@@ -275,7 +268,6 @@ function syncContentToCalendars_(row) {
         return;
       }
 
-      // Hapus event lama ber-Content ID ini (baik -PROD maupun -UP)
       var existing = cal.getEvents(searchStart, searchEnd);
       existing.forEach(function (ev) {
         var desc = ev.getDescription ? String(ev.getDescription() || '') : '';
@@ -284,8 +276,8 @@ function syncContentToCalendars_(row) {
         }
       });
 
-      // 1. Buat Event Jadwal Produksi (jika ada Timeline Produksi)
-      if (prodTitle && prodDate) {
+      // 1. Event Timeline Produksi (jam 09:00 di tanggal baris ini)
+      if (prodTitle) {
         var prodEnd = new Date(prodDate.getTime() + EVENT_DURATION_HOURS * 3600 * 1000);
         var prodEvTitle = '🎬 [PRODUKSI] ' + (stage ? '[' + stage + '] ' : '') + prodTitle;
         var prodDesc = 'Content ID: ' + id + '-PROD\nTipe: Jadwal Produksi / Syuting\n' + baseDesc;
@@ -293,10 +285,10 @@ function syncContentToCalendars_(row) {
         synced++;
       }
 
-      // 2. Buat Event Jadwal Upload (jika ada Timeline Upload)
-      if (uploadTitle && uploadDate) {
+      // 2. Event Timeline Upload (jam 17:00 di tanggal baris yang sama!)
+      if (uploadTitle) {
         var upEnd = new Date(uploadDate.getTime() + EVENT_DURATION_HOURS * 3600 * 1000);
-        var upEvTitle = '🚀 [UPLOAD] ' + uploadTitle + (platform ? ' (' + platform + ')' : '');
+        var upEvTitle = '🚀 [UPLOAD] ' + uploadTitle + (platform && platform !== 'Not Started' ? ' (' + platform + ')' : '');
         var upDesc = 'Content ID: ' + id + '-UP\nTipe: Jadwal Timeline Upload / Tayang\n' + baseDesc;
         cal.createEvent(upEvTitle, uploadDate, upEnd, { description: upDesc });
         synced++;
@@ -311,8 +303,7 @@ function syncContentToCalendars_(row) {
 }
 
 /************************************************************
- * 6. SINKRONISASI TOTAL: PRODUKSI & TIMELINE UPLOAD
- *    (MEMASUKKAN KEDUANYA SEBAGAI KONTEN DI GOOGLE CALENDAR)
+ * 6. SINKRONISASI TOTAL: SEMUA KONTEN PRODUKSI & UPLOAD KE KALENDER
  ************************************************************/
 function syncAllContentToCalendars() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -341,7 +332,6 @@ function syncAllContentToCalendars() {
       designer: 15,
       editor: 16,
       admin: 17,
-      deadline: 18,
     };
 
     for (var i = 0; i < values.length; i++) {
@@ -363,7 +353,6 @@ function syncAllContentToCalendars() {
           else if (h.indexOf('designer') !== -1) colMap.designer = colIdx;
           else if (h.indexOf('editor') !== -1) colMap.editor = colIdx;
           else if (h.indexOf('admin') !== -1) colMap.admin = colIdx;
-          else if (h.indexOf('deadline') !== -1) colMap.deadline = colIdx;
         });
         break;
       }
@@ -386,8 +375,13 @@ function syncAllContentToCalendars() {
 
       if (!id || (!prodTitle && !uploadTitle)) continue;
 
-      var prodDate = parseEventDate_(row[colMap.date], PROD_EVENT_START_HOUR);
-      var uploadDate = parseEventDate_(row[colMap.deadline] || row[colMap.date], UPLOAD_EVENT_START_HOUR);
+      // Ambil tanggal murni dari baris ini!
+      var rowDate = parseEventDate_(row[colMap.date]);
+      if (!rowDate) continue;
+
+      var prodDate = new Date(rowDate.getFullYear(), rowDate.getMonth(), rowDate.getDate(), PROD_EVENT_START_HOUR, 0, 0);
+      var uploadDate = new Date(rowDate.getFullYear(), rowDate.getMonth(), rowDate.getDate(), UPLOAD_EVENT_START_HOUR, 0, 0);
+
       var week = String(row[colMap.week] || '').trim();
       var stage = String(row[colMap.status] || '').trim();
       var platform = String(row[colMap.platform] || '').trim();
@@ -409,8 +403,8 @@ function syncAllContentToCalendars() {
         'Editor: ' + editor,
       ].join('\n');
 
-      // 1. Konten Timeline Produksi -> Buat event kalender
-      if (prodTitle && prodDate) {
+      // 1. Konten Timeline Produksi (waktu baris ini jam 09:00)
+      if (prodTitle) {
         validItems.push({
           contentId: id + '-PROD',
           eventTitle: '🎬 [PRODUKSI] ' + (stage ? '[' + stage + '] ' : '') + prodTitle,
@@ -420,11 +414,11 @@ function syncAllContentToCalendars() {
         });
       }
 
-      // 2. Konten Timeline Upload -> Buat event kalender (dianggap konten juga)
-      if (uploadTitle && uploadDate) {
+      // 2. Konten Timeline Upload (waktu persis sebaris sama baris timeline upload, jam 17:00)
+      if (uploadTitle) {
         validItems.push({
           contentId: id + '-UP',
-          eventTitle: '🚀 [UPLOAD] ' + uploadTitle + (platform ? ' (' + platform + ')' : ''),
+          eventTitle: '🚀 [UPLOAD] ' + uploadTitle + (platform && platform !== 'Not Started' ? ' (' + platform + ')' : ''),
           start: uploadDate,
           end: new Date(uploadDate.getTime() + EVENT_DURATION_HOURS * 3600 * 1000),
           desc: 'Content ID: ' + id + '-UP\nTipe: Jadwal Timeline Upload / Tayang\n' + baseDesc
@@ -450,7 +444,7 @@ function syncAllContentToCalendars() {
         return;
       }
 
-      // Hapus event lama sistem (Event pribadi anggota tidak tersentuh)
+      // Bersihkan event konten lama
       var existingEvents = cal.getEvents(rangeStart, rangeEnd);
       existingEvents.forEach(function (ev) {
         var desc = ev.getDescription ? String(ev.getDescription() || '') : '';
@@ -460,7 +454,7 @@ function syncAllContentToCalendars() {
         }
       });
 
-      // Masukkan semua konten (baik Produksi maupun Timeline Upload)
+      // Masukkan semua konten
       validItems.forEach(function (item) {
         cal.createEvent(item.eventTitle, item.start, item.end, { description: item.desc });
         totalSynced++;
