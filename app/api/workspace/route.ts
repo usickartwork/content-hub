@@ -38,7 +38,12 @@ export async function POST(request: Request) {
     });
     
     const textData = await response.text();
-    const result = JSON.parse(textData);
+    let result;
+    try {
+      result = JSON.parse(textData);
+    } catch {
+      return NextResponse.json({ success: false, error: textData.slice(0, 200) || 'Gagal memproses response dari Apps Script' });
+    }
     
     return NextResponse.json(result);
   } catch (err: any) {

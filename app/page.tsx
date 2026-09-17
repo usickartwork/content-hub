@@ -119,7 +119,7 @@ export default function WorkflowWorkspace() {
 
   const handleSyncCalendar = async () => {
     setIsSyncingCalendar(true);
-    setMessage('Menyinkronkan semua jadwal ke Google Calendar tim...');
+    setMessage('Menyinkronkan jadwal ke Google Calendar tim...');
     try {
       const res = await fetch('/api/workspace', {
         method: 'POST',
@@ -127,16 +127,16 @@ export default function WorkflowWorkspace() {
         body: JSON.stringify({ action: 'sync_all' }),
       });
       const json = await res.json();
-      if (json && (json.success || json.synced !== undefined || json.syncedTotal !== undefined)) {
+      if (json && json.success) {
         const count = json.synced ?? json.syncedTotal ?? 0;
-        setMessage(`Berhasil sync ${count} event ke kalender seluruh tim!`);
+        setMessage(`Berhasil sync ${count} event ke kalender tim!`);
       } else {
-        setMessage('Sinkronisasi selesai diproses ke Google Calendar.');
+        setMessage('Gagal: ' + (json.error || 'Pastikan izin Google Calendar sudah di-Allow di Apps Script'));
       }
-      setTimeout(() => setMessage(''), 4500);
+      setTimeout(() => setMessage(''), 6000);
     } catch (err: any) {
-      setMessage('Gagal sync: ' + err.toString());
-      setTimeout(() => setMessage(''), 4500);
+      setMessage('Error sync: ' + err.toString());
+      setTimeout(() => setMessage(''), 6000);
     } finally {
       setIsSyncingCalendar(false);
     }
