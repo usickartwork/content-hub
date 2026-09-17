@@ -112,16 +112,35 @@ function syncCalendarFromWeb_() {
 }
 
 /************************************************************
- * CARA PAKAI:
- * Panggil di bagian akhir doPost(e) SETELAH row sukses disimpan
- * ke sheet:
+ * CARA PAKAI DI doPost(e):
+ * Letakkan kode berikut di bagian paling atas fungsi doPost(e) kamu
+ * di Google Apps Script agar tombol di Web bisa memicu sync otomatis:
  *
- *   if (params.action === 'calendar_sync') {
- *     return ContentService.createTextOutput(JSON.stringify(syncContentToCalendars_(params.newRowData)));
+ *   var body = JSON.parse(e.postData.contents);
+ *   if (body.action === 'sync_all' || body.action === 'calendar_sync_all') {
+ *     var res = syncAllContentToCalendars();
+ *     return ContentService.createTextOutput(JSON.stringify({
+ *       success: true,
+ *       synced: res.syncedTotal,
+ *       total: res.total,
+ *       skipped: res.skippedTotal
+ *     })).setMimeType(ContentService.MimeType.JSON);
  *   }
- *   ... (kode simpan sheet yang sudah ada) ...
- *   syncContentToCalendars_(body.newRowData);
  ************************************************************/
+
+// Fungsi handler pembantu yang bisa langsung dipanggil di doPost
+function handleCalendarSyncRequest_(body) {
+  if (body && (body.action === 'sync_all' || body.action === 'calendar_sync_all')) {
+    var res = syncAllContentToCalendars();
+    return {
+      success: true,
+      synced: res.syncedTotal,
+      total: res.total,
+      skipped: res.skippedTotal
+    };
+  }
+  return null;
+}
 
 // Wrapper function helper
 function syncContentToCalendars_(row) {

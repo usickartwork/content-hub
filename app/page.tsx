@@ -115,6 +115,32 @@ export default function WorkflowWorkspace() {
   const [reportNotes, setReportNotes] = useState('');
   const [reportMsg, setReportMsg] = useState('');
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
+  const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
+
+  const handleSyncCalendar = async () => {
+    setIsSyncingCalendar(true);
+    setMessage('Menyinkronkan semua jadwal ke Google Calendar tim...');
+    try {
+      const res = await fetch('/api/workspace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync_all' }),
+      });
+      const json = await res.json();
+      if (json && (json.success || json.synced !== undefined || json.syncedTotal !== undefined)) {
+        const count = json.synced ?? json.syncedTotal ?? 0;
+        setMessage(`Berhasil sync ${count} event ke kalender seluruh tim!`);
+      } else {
+        setMessage('Sinkronisasi selesai diproses ke Google Calendar.');
+      }
+      setTimeout(() => setMessage(''), 4500);
+    } catch (err: any) {
+      setMessage('Gagal sync: ' + err.toString());
+      setTimeout(() => setMessage(''), 4500);
+    } finally {
+      setIsSyncingCalendar(false);
+    }
+  };
 
   const loadData = async (targetSheet?: string) => {
     try {
@@ -683,6 +709,24 @@ export default function WorkflowWorkspace() {
 
           <div className="header-actions-row" style={styles.headerActions}>
             {message && <span style={{ fontSize: '12px', fontWeight: 600, color: '#10B981' }}>{message}</span>}
+            <button 
+              onClick={handleSyncCalendar} 
+              disabled={isSyncingCalendar}
+              style={{
+                ...styles.secondaryButton,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                borderColor: '#BFDBFE',
+                color: '#2563EB',
+                cursor: isSyncingCalendar ? 'not-allowed' : 'pointer',
+                opacity: isSyncingCalendar ? 0.7 : 1,
+              }}
+              title="Sinkronkan seluruh konten spreadsheet ke Google Calendar tim"
+            >
+              <span>📅</span>
+              <span>{isSyncingCalendar ? 'Syncing...' : 'Sync Kalender'}</span>
+            </button>
             <button onClick={() => loadData(selectedSheet)} style={styles.secondaryButton}>Refresh</button>
             <input className="search-input-field" type="text" placeholder="Cari judul atau tim..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={styles.searchInput} />
             <button onClick={handleOpenAddModal} style={styles.primaryButton}>+ Input Konten Baru</button>
@@ -776,7 +820,26 @@ export default function WorkflowWorkspace() {
 
           {activeMenu === 'kalender' && (
             <div style={styles.dashCard}>
-              <h4 style={styles.dashTitle}>{calGrid.monthName} {calGrid.year}</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                <h4 style={{ ...styles.dashTitle, margin: 0 }}>{calGrid.monthName} {calGrid.year}</h4>
+                <button 
+                  onClick={handleSyncCalendar} 
+                  disabled={isSyncingCalendar}
+                  style={{
+                    ...styles.primaryButton,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '12px',
+                    padding: '8px 16px',
+                    cursor: isSyncingCalendar ? 'not-allowed' : 'pointer',
+                    opacity: isSyncingCalendar ? 0.7 : 1,
+                  }}
+                >
+                  <span>📅</span>
+                  <span>{isSyncingCalendar ? 'Menyinkronkan ke Kalender...' : 'Sync Semua ke Kalender Tim'}</span>
+                </button>
+              </div>
               <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
                 {WEEKDAYS.map(w => (
                   <div key={w} style={{ fontSize: '10px', fontWeight: 700, color: '#71717A', textAlign: 'center', padding: '4px 0' }}>{w}</div>
