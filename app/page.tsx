@@ -326,18 +326,14 @@ export default function WorkflowWorkspace() {
   const allParsedItems: any[] = [];
   targetSheetsToParse.forEach((sheetName: string) => {
     const currentRows = data?.sheets?.[sheetName] || [];
-    let headerIdx = 0;
     let headerIdx = -1;
     for (let i = 0; i < currentRows.length; i++) {
-      const firstCell = String(currentRows[i][0] || '').trim().toLowerCase();
-      if (firstCell === 'content id' || firstCell === 'id') {
       const rowSlice = currentRows[i].slice(0, 10).map((c: any) => String(c || '').trim().toLowerCase());
       if (rowSlice.some((c: string) => c === 'content id' || c === 'id' || c === 'post title' || c === 'judul')) {
         headerIdx = i;
         break;
       }
     }
-    const rows = currentRows.slice(headerIdx + 1);
     const rows = currentRows.slice(headerIdx !== -1 ? headerIdx + 1 : 1);
     rows.forEach((r: any[]) => {
       let rawStatus = String(r[6] || '').trim();
@@ -356,7 +352,6 @@ export default function WorkflowWorkspace() {
         parsedCheck = (rawStatus.includes('Selesai') || rawStatus.includes('Done')) ? 'Selesai' : 'Proses';
       }
 
-      const title = r[5] ? String(r[5]).trim() : '';
       let title = r[5] ? String(r[5]).trim() : '';
       if (!title || title === '-' || title.toLowerCase() === 'not started') {
         title = r[4] ? String(r[4]).trim() : '';
@@ -366,11 +361,6 @@ export default function WorkflowWorkspace() {
         const prodDate = formatSpreadsheetDate(r[2]);
         const upDate = formatSpreadsheetDate(r[17]);
         allParsedItems.push({
-          id: r[0] || '-', week: r[1] || 'Week 1', date: r[2] ? String(r[2]).split('T')[0] : '-',
-          title: title, stage: parsedStage, checkStatus: parsedCheck,
-          platform: r[7] || '-', format: r[8] || '-', plannerAndAdmin: r[12] || '-', copywriter: r[13] || '-',
-          productionTeam: r[14] || '-', designer: r[15] || '-', editor: r[16] || '-',
-          raw: r, parsedStage: parsedStage, parsedCheck: parsedCheck,
           id: r[0] || '-',
           week: r[1] || 'Week 1',
           date: prodDate,
@@ -928,13 +918,6 @@ export default function WorkflowWorkspace() {
                 ) : (
                   <div key={idx} style={itemsByDay[day] ? styles.calDayActive : styles.calDay}>
                     <span style={itemsByDay[day] ? styles.calDayNumActive : styles.calDayNum}>{day}</span>
-                    {itemsByDay[day] && itemsByDay[day].slice(0, 2).map((it: any, j: number) => (
-                      <span key={j} style={styles.calDayTitle}>
-                        {it.title.length > 16 ? it.title.slice(0, 16) + '…' : it.title}
-                      </span>
-                    ))}
-                    {itemsByDay[day] && itemsByDay[day].length > 2 && (
-                      <span style={styles.calDayMore}>+{itemsByDay[day].length - 2} lagi</span>
                     {itemsByDay[day] && itemsByDay[day].slice(0, 3).map((it: any, j: number) => {
                       const isUp = it.type === 'upload';
                       return (
