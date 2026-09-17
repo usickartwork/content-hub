@@ -522,15 +522,26 @@ export default function WorkflowWorkspace() {
         @media (max-width: 380px) {
           .report-form-grid { grid-template-columns: 1fr !important; }
         }
+        .sidebar-btn {
+          outline: none !important;
+          -webkit-tap-highlight-color: transparent !important;
+        }
+        .sidebar-btn:hover:not(.sidebar-btn-active) {
+          background-color: #F3F4F6 !important;
+          color: #111827 !important;
+        }
+        .sidebar-btn:active {
+          transform: scale(0.98);
+        }
         @media (min-width: 769px) { .mobile-header-bar { display: none !important; } }
       `}} />
 
-<div className="mobile-header-bar" style={styles.mobileHeaderBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <button onClick={() => setIsMobileSidebarOpen(true)} style={styles.hamburgerBtn}>☰</button>
-            <span style={{ fontSize: '14px', fontWeight: 700, color: '#09090B' }}>Dream Field</span>
-          </div>
+      <div className="mobile-header-bar" style={styles.mobileHeaderBar}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button onClick={() => setIsMobileSidebarOpen(true)} style={styles.hamburgerBtn}>☰</button>
+          <span style={{ fontSize: '14px', fontWeight: 700, color: '#09090B' }}>Dream Field</span>
         </div>
+      </div>
 
       <aside className="desktop-sidebar" style={styles.sidebar}>
         <div style={styles.sidebarHeader}>
@@ -552,7 +563,12 @@ export default function WorkflowWorkspace() {
             ].map((m) => {
               const isActive = activeMenu === m.key;
               return (
-                <button key={m.key} onClick={() => setActiveMenu(m.key as any)} style={{ ...styles.menuButton, ...(isActive ? styles.menuButtonActive : {}) }}>
+                <button 
+                  key={m.key} 
+                  onClick={() => setActiveMenu(m.key as any)} 
+                  className={`sidebar-btn ${isActive ? 'sidebar-btn-active' : ''}`}
+                  style={{ ...styles.menuButton, ...(isActive ? styles.menuButtonActive : {}) }}
+                >
                   <span>{m.label}</span>
                   {isActive && <span style={styles.activeDot}></span>}
                 </button>
@@ -564,6 +580,7 @@ export default function WorkflowWorkspace() {
           <div style={styles.menuList}>
             <button 
               onClick={() => setSelectedSheet('all')} 
+              className={`sidebar-btn ${selectedSheet === 'all' ? 'sidebar-btn-active' : ''}`}
               style={{ ...styles.menuButton, ...(selectedSheet === 'all' ? styles.menuButtonActive : {}) }}
             >
               <span>Semua Periode 2026</span>
@@ -573,7 +590,12 @@ export default function WorkflowWorkspace() {
               const isActive = selectedSheet === n;
               const displayName = n.replace('26', ' 2026');
               return (
-                <button key={n} onClick={() => setSelectedSheet(n)} style={{ ...styles.menuButton, ...(isActive ? styles.menuButtonActive : {}) }}>
+                <button 
+                  key={n} 
+                  onClick={() => setSelectedSheet(n)} 
+                  className={`sidebar-btn ${isActive ? 'sidebar-btn-active' : ''}`}
+                  style={{ ...styles.menuButton, ...(isActive ? styles.menuButtonActive : {}) }}
+                >
                   <span>{displayName}</span>
                   {isActive && <span style={styles.activeDot}></span>}
                 </button>
@@ -607,7 +629,12 @@ export default function WorkflowWorkspace() {
               ].map((m) => {
                 const isActive = activeMenu === m.key;
                 return (
-                  <button key={m.key} onClick={() => { setActiveMenu(m.key as any); setIsMobileSidebarOpen(false); }} style={{ ...styles.menuButton, ...(isActive ? styles.menuButtonActive : {}) }}>
+                  <button 
+                    key={m.key} 
+                    onClick={() => { setActiveMenu(m.key as any); setIsMobileSidebarOpen(false); }} 
+                    className={`sidebar-btn ${isActive ? 'sidebar-btn-active' : ''}`}
+                    style={{ ...styles.menuButton, ...(isActive ? styles.menuButtonActive : {}) }}
+                  >
                     <span>{m.label}</span>
                     {isActive && <span style={styles.activeDot}></span>}
                   </button>
@@ -619,6 +646,7 @@ export default function WorkflowWorkspace() {
             <div style={styles.menuList}>
               <button 
                 onClick={() => { setSelectedSheet('all'); setIsMobileSidebarOpen(false); }} 
+                className={`sidebar-btn ${selectedSheet === 'all' ? 'sidebar-btn-active' : ''}`}
                 style={{ ...styles.menuButton, ...(selectedSheet === 'all' ? styles.menuButtonActive : {}) }}
               >
                 <span>Semua Periode 2026</span>
@@ -628,7 +656,12 @@ export default function WorkflowWorkspace() {
                 const isActive = selectedSheet === n;
                 const displayName = n.replace('26', ' 2026');
                 return (
-                  <button key={n} onClick={() => { setSelectedSheet(n); setIsMobileSidebarOpen(false); }} style={{ ...styles.menuButton, ...(isActive ? styles.menuButtonActive : {}) }}>
+                  <button 
+                    key={n} 
+                    onClick={() => { setSelectedSheet(n); setIsMobileSidebarOpen(false); }} 
+                    className={`sidebar-btn ${isActive ? 'sidebar-btn-active' : ''}`}
+                    style={{ ...styles.menuButton, ...(isActive ? styles.menuButtonActive : {}) }}
+                  >
                     <span>{displayName}</span>
                     {isActive && <span style={styles.activeDot}></span>}
                   </button>
@@ -1072,12 +1105,13 @@ const styles: Record<string, React.CSSProperties> = {
   menuList: { display: 'flex', flexDirection: 'column', gap: '3px' },
   menuButton: {
     width: '100%', textAlign: 'left', padding: '10px 14px', borderRadius: '12px',
-    fontSize: '13px', fontWeight: 500, border: 'none', background: 'transparent',
-    cursor: 'pointer', color: '#6B7280', display: 'flex', justifyContent: 'space-between',
-    alignItems: 'center', transition: 'all 0.15s ease',
+    fontSize: '13px', fontWeight: 600, border: 'none', background: 'transparent',
+    cursor: 'pointer', color: '#4B5563', display: 'flex', justifyContent: 'space-between',
+    alignItems: 'center', transition: 'all 0.15s ease', outline: 'none',
   },
   menuButtonActive: {
-    backgroundColor: '#2563EB', color: '#FFFFFF', fontWeight: 600,
+    background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)',
+    color: '#FFFFFF', fontWeight: 700,
     boxShadow: '0 4px 14px rgba(37,99,235,0.30)',
   },
   activeDot: {
