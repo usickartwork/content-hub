@@ -1,9 +1,11 @@
 /************************************************************
  * CONFIGURASI KALENDER
  * -----------------------------------------------------------------
- * Isi tiap "calendarId" dengan ID kalender 5 anggota, SETELAH tiap
- * anggota selesai share kalendernya ke email admin dengan izin
- * "Buat & ubah event" (Make changes to events).
+ * Config sekarang disimpan di sheet "CalendarConfig".
+ * Format sheet: Member | CalendarId | Enabled
+ * (baris pertama = header)
+ *
+ * Fallback: jika sheet belum ada, pakai config hardcoded di bawah.
  *
  * Cara dapat ID kalender:
  *   Google Calendar (admin) -> Settings -> "Settings for my calendars"
@@ -14,18 +16,100 @@
  *   Google Calendar -> pengaturan kalender -> "Share with specific people"
  *   -> tambahkan email admin -> permission: "Make changes to events".
  ************************************************************/
-const CONTENT_CALENDAR_CONFIG = [
+const CONTENT_CALENDAR_CONFIG_FALLBACK = [
   { member: 'Filius (Planner)',  calendarId: 'GANTI_EMAIL_FILIUS@gmail.com' },
-  // Tambahkan kembali anggota lain di sini setelah pengujian selesai:
-  // { member: 'Raka (Copywriter)', calendarId: 'GANTI_EMAIL_RAKA@gmail.com' },
-  // { member: 'Tim Produksi',      calendarId: 'GANTI_EMAIL_TIM_PRODUKSI@gmail.com' },
-  // { member: 'Kevin (Designer)',  calendarId: 'GANTI_EMAIL_KEVIN@gmail.com' },
-  // { member: 'Alya (Editor)',     calendarId: 'GANTI_EMAIL_ALYA@gmail.com' },
+  { member: 'Raka (Copywriter)', calendarId: 'GANTI_EMAIL_RAKA@gmail.com' },
+  { member: 'Tim Produksi',      calendarId: 'GANTI_EMAIL_TIM_PRODUKSI@gmail.com' },
+  { member: 'Kevin (Designer)',  calendarId: 'GANTI_EMAIL_KEVIN@gmail.com' },
+  { member: 'Alya (Editor)',     calendarId: 'GANTI_EMAIL_ALYA@gmail.com' },
 ];
 
 // Mulai event jam berapa & durasi (jam). Hanya menampilkan tanggal, jam menyesuaikan.
 const CONTENT_EVENT_START_HOUR = 9;
 const CONTENT_EVENT_DURATION_HOURS = 1;
+
+/************************************************************
+ * CALENDAR CONFIG: READ / WRITE dari sheet "CalendarConfig"
+ ************************************************************/
+function getCalendarConfig_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('CalendarConfig');
+  if (!sheet) {
+    // Buat sheet jika belum ada
+    sheet = ss.insertSheet('CalendarConfig');
+    sheet.appendRow(['Member', 'CalendarId', 'Enabled']);
+    CONTENT_CALENDAR_CONFIG_FALLBACK.forEach(function (cfg) {
+      sheet.appendRow([cfg.member, cfg.calendarId, 'true']);
+    });
+    return CONTENT_CALENDAR_CONFIG_FALLBACK.map(function (c) {
+      return { member: c.member, calendarId: c.calendarId, enabled: true };
+    });
+  }
+
+  var data = sheet.getDataRange().getValues();
+  var result = [];
+  for (var i = 1; i < data.length; i++) {
+    var member = String(data[i][0] || '').trim();
+    var calId = String(data[i][1] || '').trim();
+    var enabled = String(data[i][2] || 'true').trim().toLowerCase() === 'true';
+    if (member) {
+      result.push({ member: member, calendarId: calId, enabled: enabled });
+    }
+  }
+  return result.length > 0 ? result : CONTENT_CALENDAR_CONFIG_FALLBACK;
+}
+
+function saveCalendarConfig_(configArray) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('CalendarConfig');
+  if (!sheet) {
+    sheet = ss.insertSheet('CalendarConfig');
+  }
+
+  // Clear isi lama, tulis ulang
+  sheet.clear();
+  sheet.appendRow(['Member', 'CalendarId', 'Enabled']);
+  configArray.forEach(function (cfg) {
+    sheet.appendRow([cfg.member, cfg.calendarId || '', cfg.enabled ? 'true' : 'false']);
+  });
+}
+
+/************************************************************
+ * SYNC: trigger dari web app
+ ************************************************************/
+function syncCalendarFromWeb_() {
+  var config = getCalendarConfig_();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var monthSheets = ['August26', 'September26', 'October26', 'November26', 'December26']
+    .filter(function (n) { return ss.getSheetByName(n) !== null; });
+
+  var total = 0;
+  var syncedTotal = 0;
+  var skippedTotal = 0;
+
+  monthSheets.forEach(function (name) {
+    var sheet = ss.getSheetByName(name);
+    var values = sheet.getDataRange().getValues();
+    var headerRow = -1;
+    for (var i = 0; i < values.length; i++) {
+      var first = String(values[i][0] || '').trim().toLowerCase();
+      if (first === 'content id' || first === 'id') {
+        headerRow = i;
+        break;
+      }
+    }
+    if (headerRow === -1) return;
+
+    for (var j = headerRow + 1; j < values.length; j++) {
+      total++;
+      var res = syncContentToCalendarsWithConfig_(values[j], config);
+      syncedTotal += res.synced;
+      skippedTotal += res.skipped;
+    }
+  });
+
+  return { total: total, synced: syncedTotal, skipped: skippedTotal };
+}
 
 /************************************************************
  * CARA PAKAI:
@@ -39,33 +123,27 @@ const CONTENT_EVENT_DURATION_HOURS = 1;
  *   syncContentToCalendars_(body.newRowData);
  ************************************************************/
 
-// Mengubah nilai tanggal (Date object dari Sheets ATAU string "2026-09-01")
-// menjadi Date mulai event. Mengembalikan null bila tidak valid.
-function parseEventDate_(val) {
-  if (val instanceof Date) {
-    if (isNaN(val.getTime())) return null;
-    return new Date(val.getFullYear(), val.getMonth(), val.getDate(), CONTENT_EVENT_START_HOUR, 0, 0, 0);
-  }
-  var s = String(val || '').trim();
-  if (!s) return null;
-  var d = new Date(s.split('T')[0] + 'T00:00:00');
-  if (isNaN(d.getTime())) return null;
-  d.setHours(CONTENT_EVENT_START_HOUR, 0, 0, 0);
-  return d;
+// Wrapper function helper
+function syncContentToCalendars_(row) {
+  var config = getCalendarConfig_();
+  return syncContentToCalendarsWithConfig_(row, config);
 }
 
-// Membuat / update event konten ke 5 kalender. Menghapus event lama yang
+// Membuat / update event konten ke kalender. Menghapus event lama yang
 // ber-Content ID sama di tanggal tsb (anti duplikat saat edit/ulang simpan).
-function syncContentToCalendars_(row) {
+function syncContentToCalendarsWithConfig_(row, config) {
   var id = String(row[0] || '').trim();
   var week = String(row[1] || '').trim();
-  var start = parseEventDate_(row[2]);
+  var dateRaw = String(row[2] || '').trim();
   var title = String(row[5] || '').trim();
   var stage = String(row[6] || '').trim();
   var platform = String(row[7] || '').trim();
 
-  if (!id || !start || !title) return { synced: 0, skipped: 0, invalid: true };
+  if (!id || !dateRaw || !title) return { synced: 0, skipped: 0 };
 
+  var datePart = dateRaw.split('T')[0];
+  var start = new Date(datePart + 'T00:00:00');
+  start.setHours(CONTENT_EVENT_START_HOUR, 0, 0, 0);
   var end = new Date(start.getTime() + CONTENT_EVENT_DURATION_HOURS * 3600 * 1000);
 
   var description = [
@@ -84,8 +162,10 @@ function syncContentToCalendars_(row) {
 
   var synced = 0;
   var skipped = 0;
+  var targetConfigs = config && config.length > 0 ? config : getCalendarConfig_();
 
-  CONTENT_CALENDAR_CONFIG.forEach(function (cfg) {
+  targetConfigs.forEach(function (cfg) {
+    if (cfg.enabled === false) return;
     try {
       var cal = CalendarApp.getCalendarById(cfg.calendarId);
       if (!cal) {
@@ -110,7 +190,7 @@ function syncContentToCalendars_(row) {
     }
   });
 
-  return { synced: synced, skipped: skipped, invalid: false };
+  return { synced: synced, skipped: skipped };
 }
 
 // Menghapus semua event ber-Content ID tertentu (dipakai bila konten dihapus).
@@ -119,7 +199,9 @@ function deleteContentEvents_(id) {
   if (!targetId) return 0;
 
   var deleted = 0;
-  CONTENT_CALENDAR_CONFIG.forEach(function (cfg) {
+  var config = getCalendarConfig_();
+  config.forEach(function (cfg) {
+    if (cfg.enabled === false) return;
     try {
       var cal = CalendarApp.getCalendarById(cfg.calendarId);
       if (!cal) return;
@@ -155,45 +237,39 @@ function deleteContentEvents_(id) {
  ************************************************************/
 function syncAllContentToCalendars() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheets = ss.getSheets(); // scan SEMUA sheet (periode bulan, timeline, dll)
+  var monthSheets = ['August26', 'September26', 'October26', 'November26', 'December26']
+    .filter(function (n) { return ss.getSheetByName(n) !== null; });
 
   var total = 0;
   var syncedTotal = 0;
   var skippedTotal = 0;
-  var invalidTotal = 0;
-  var processedSheets = [];
-  var headerNames = ['content id', 'id']; // nama-nama kolom ID yang dikenali
 
-  sheets.forEach(function (sheet) {
-    var name = sheet.getName();
+  monthSheets.forEach(function (name) {
+    var sheet = ss.getSheetByName(name);
     var values = sheet.getDataRange().getValues();
 
-    // Cari baris header di sheet tsb (kolom pertama 'Content ID' / 'id')
+    // Cari baris header (kolom pertama 'Content ID' / 'id')
     var headerRow = -1;
     for (var i = 0; i < values.length; i++) {
       var first = String(values[i][0] || '').trim().toLowerCase();
-      if (headerNames.indexOf(first) !== -1) {
+      if (first === 'content id' || first === 'id') {
         headerRow = i;
         break;
       }
     }
     if (headerRow === -1) {
-      console.log('Sheet ' + name + ': tidak ada kolom Content ID, dilewati');
+      console.log('Sheet ' + name + ': header tidak ditemukan, dilewati');
       return;
     }
 
-    processedSheets.push(name);
     for (var j = headerRow + 1; j < values.length; j++) {
       total++;
       var res = syncContentToCalendars_(values[j]);
       syncedTotal += res.synced;
       skippedTotal += res.skipped;
-      if (res.invalid) invalidTotal++;
     }
   });
 
-  Logger.log('Sync selesai -> Sheet: ' + processedSheets.join(', ') +
-    ' | Baris: ' + total + ' | Event dibuat/diupdate: ' + syncedTotal +
-    ' | Dilewati (kalender): ' + skippedTotal + ' | Baris tanpa judul/tanggal valid: ' + invalidTotal);
-  return { sheets: processedSheets, total: total, synced: syncedTotal, skipped: skippedTotal, invalid: invalidTotal };
+  Logger.log('Sync selesai -> Total baris: ' + total + ', Event dibuat/diupdate: ' + syncedTotal + ', Dilewati: ' + skippedTotal);
+  return { total: total, synced: syncedTotal, skipped: skippedTotal };
 }

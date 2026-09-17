@@ -11,7 +11,22 @@ const STAGE_NAMES = [
   '5. Done / Posted'
 ];
 
-const MONTH_ORDER = ['December26', 'November26', 'October26', 'September26', 'August26'];
+const MONTH_ORDER = [
+  'January26', 'Januari26',
+  'February26', 'Februari26',
+  'March26', 'Maret26',
+  'April26',
+  'May26', 'Mei26',
+  'June26', 'Juni26',
+  'July26', 'Juli26',
+  'August26', 'Agustus26',
+  'September26',
+  'October26', 'Oktober26',
+  'November26',
+  'December26', 'Desember26',
+];
+
+const NON_CONTENT_SHEETS = ['team', 'socmedreport', 'calendarconfig', 'config', 'user', 'users'];
 
 const SOCMED_ACCOUNTS = [
   { platform: 'Instagram', username: 'dreamfieldtacticalsurabaya', url: 'https://www.instagram.com/dreamfieldtacticalsurabaya' },
@@ -21,9 +36,25 @@ const SOCMED_ACCOUNTS = [
 const MONTH_MAP: Record<string, number> = {
   January: 0, February: 1, March: 2, April: 3, May: 4, June: 5,
   July: 6, August: 7, September: 8, October: 9, November: 10, December: 11,
+  Januari: 0, Februari: 1, Maret: 2, Mei: 4, Juni: 5,
+  Juli: 6, Agustus: 7, Oktober: 9, Nopember: 10, Desember: 11,
 };
 
 function getMonthGrid(sheetName: string) {
+  if (sheetName === 'all') {
+    const now = new Date();
+    const year = 2026;
+    const month = now.getMonth();
+    const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const monthName = monthNames[month] || 'September';
+    const first = new Date(year, month, 1);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const startOffset = (first.getDay() + 6) % 7;
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < startOffset; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    return { monthName: 'Semua Periode', year, cells };
+  }
   const monthName = sheetName.replace(/[0-9]+$/, '');
   const year = parseInt(sheetName.replace(/^[A-Za-z]+/, ''), 10) || 2026;
   const month = MONTH_MAP[monthName] ?? new Date().getMonth();
@@ -71,6 +102,7 @@ export default function WorkflowWorkspace() {
   
   const [deadline, setDeadline] = useState('2026-09-01');
   const [progress, setProgress] = useState('0%');
+  const [itemSheetName, setItemSheetName] = useState<string>('');
 
   const [reportPlatform, setReportPlatform] = useState('Instagram');
   const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
@@ -91,9 +123,9 @@ export default function WorkflowWorkspace() {
       if (json && json.sheets) {
         setData(json);
         const availableSheets = json.sheetNames || Object.keys(json.sheets);
-        if (targetSheet && availableSheets.includes(targetSheet)) {
+        if (targetSheet && (targetSheet === 'all' || availableSheets.includes(targetSheet))) {
           setSelectedSheet(targetSheet);
-        } else if (!availableSheets.includes(selectedSheet)) {
+        } else if (selectedSheet !== 'all' && !availableSheets.includes(selectedSheet)) {
           const defaultSheet = availableSheets.find((n: string) => n.includes('26')) || availableSheets[0];
           if (defaultSheet) setSelectedSheet(defaultSheet);
         }
@@ -130,6 +162,7 @@ export default function WorkflowWorkspace() {
     setEditor('Alya');
     setDeadline(new Date().toISOString().split('T')[0]);
     setProgress('0%');
+    setItemSheetName(selectedSheet === 'all' ? 'September26' : selectedSheet);
     setIsModalOpen(true);
   };
 
@@ -154,6 +187,7 @@ export default function WorkflowWorkspace() {
     setEditor(item.raw[16] || 'Alya');
     setDeadline(item.raw[17] ? String(item.raw[17]).split('T')[0] : item.date);
     setProgress(item.raw[18] || '0%');
+    setItemSheetName(item.sheetName || (selectedSheet === 'all' ? 'September26' : selectedSheet));
     setIsModalOpen(true);
   };
 
@@ -164,7 +198,9 @@ export default function WorkflowWorkspace() {
     setIsSubmitting(true);
     setMessage('Menyimpan estafet otomatis...');
 
-    const currentActiveSheet = selectedSheet;
+    const currentActiveSheet = isEditing 
+      ? (itemSheetName || (selectedSheet === 'all' ? 'September26' : selectedSheet))
+      : (selectedSheet === 'all' ? (itemSheetName || 'September26') : selectedSheet);
     let finalStageToSave = '';
     
     if (!isEditing) {
@@ -226,61 +262,72 @@ export default function WorkflowWorkspace() {
     );
   }
 
-  const currentRows = data?.sheets?.[selectedSheet] || [];
-  
-  let headerIdx = 0;
-  for (let i = 0; i < currentRows.length; i++) {
-    const firstCell = String(currentRows[i][0] || '').trim().toLowerCase();
-    if (firstCell === 'content id' || firstCell === 'id') {
-      headerIdx = i;
-      break;
-    }
-  }
+  const availableSheetsFromData: string[] = data?.sheetNames || (data?.sheets ? Object.keys(data.sheets) : []);
+  const contentSheets = availableSheetsFromData.filter(
+    (name: string) => !NON_CONTENT_SHEETS.includes(name.toLowerCase())
+  );
 
-  const rows = currentRows.slice(headerIdx + 1);
+  const sortedSheetNames = contentSheets.slice().sort((a: string, b: string) => {
+    const idxA = MONTH_ORDER.findIndex(m => m.toLowerCase() === a.toLowerCase());
+    const idxB = MONTH_ORDER.findIndex(m => m.toLowerCase() === b.toLowerCase());
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return a.localeCompare(b);
+  });
 
-  const contentList = rows.map((r: any[]) => {
-    let rawStatus = String(r[6] || '').trim();
-    let parsedStage = STAGE_NAMES[0];
-    let parsedCheck = 'Proses';
+  const finalSheetList = sortedSheetNames.length > 0 ? sortedSheetNames : contentSheets;
 
-    if (rawStatus.includes('Copywriting')) parsedStage = STAGE_NAMES[1];
-    else if (rawStatus.includes('Produksi') || rawStatus.includes('Syuting')) parsedStage = STAGE_NAMES[2];
-    else if (rawStatus.includes('Visual') || rawStatus.includes('Editing')) parsedStage = STAGE_NAMES[3];
-    else if (rawStatus.includes('Done') || rawStatus.includes('Posted')) parsedStage = STAGE_NAMES[4];
-    else parsedStage = STAGE_NAMES[0];
+  const isAllSheets = selectedSheet === 'all';
+  const targetSheetsToParse = isAllSheets ? finalSheetList : (data?.sheets?.[selectedSheet] ? [selectedSheet] : (finalSheetList.length > 0 ? [finalSheetList[0]] : []));
 
-    if (parsedStage === '5. Done / Posted') {
-      if (rawStatus.includes('Selesai')) {
-        parsedCheck = 'Selesai';
-      } else {
-        parsedCheck = 'Proses';
-      }
-    } else {
-      if (rawStatus.includes('Selesai') || rawStatus.includes('Done')) {
-        parsedCheck = 'Selesai';
-      } else {
-        parsedCheck = 'Proses';
+  const allParsedItems: any[] = [];
+  targetSheetsToParse.forEach((sheetName: string) => {
+    const currentRows = data?.sheets?.[sheetName] || [];
+    let headerIdx = 0;
+    for (let i = 0; i < currentRows.length; i++) {
+      const firstCell = String(currentRows[i][0] || '').trim().toLowerCase();
+      if (firstCell === 'content id' || firstCell === 'id') {
+        headerIdx = i;
+        break;
       }
     }
+    const rows = currentRows.slice(headerIdx + 1);
+    rows.forEach((r: any[]) => {
+      let rawStatus = String(r[6] || '').trim();
+      let parsedStage = STAGE_NAMES[0];
+      let parsedCheck = 'Proses';
 
-    return {
-      id: r[0] || '-', week: r[1] || 'Week 1', date: r[2] ? String(r[2]).split('T')[0] : '-',
-      title: r[5] ? String(r[5]).trim() : '', stage: parsedStage, checkStatus: parsedCheck,
-      platform: r[7] || '-', format: r[8] || '-', plannerAndAdmin: r[12] || '-', copywriter: r[13] || '-',
-      productionTeam: r[14] || '-', designer: r[15] || '-', editor: r[16] || '-',
-      raw: r, parsedStage: parsedStage, parsedCheck: parsedCheck
-    };
-  }).filter((item: any) => {
-    const hasTitle = item.title !== '' && item.title !== '-' && item.title.toLowerCase() !== 'not started';
-    if (!hasTitle) return false;
+      if (rawStatus.includes('Copywriting')) parsedStage = STAGE_NAMES[1];
+      else if (rawStatus.includes('Produksi') || rawStatus.includes('Syuting')) parsedStage = STAGE_NAMES[2];
+      else if (rawStatus.includes('Visual') || rawStatus.includes('Editing')) parsedStage = STAGE_NAMES[3];
+      else if (rawStatus.includes('Done') || rawStatus.includes('Posted')) parsedStage = STAGE_NAMES[4];
+      else parsedStage = STAGE_NAMES[0];
+
+      if (parsedStage === '5. Done / Posted') {
+        parsedCheck = rawStatus.includes('Selesai') ? 'Selesai' : 'Proses';
+      } else {
+        parsedCheck = (rawStatus.includes('Selesai') || rawStatus.includes('Done')) ? 'Selesai' : 'Proses';
+      }
+
+      const title = r[5] ? String(r[5]).trim() : '';
+      if (title && title !== '-' && title.toLowerCase() !== 'not started') {
+        allParsedItems.push({
+          id: r[0] || '-', week: r[1] || 'Week 1', date: r[2] ? String(r[2]).split('T')[0] : '-',
+          title: title, stage: parsedStage, checkStatus: parsedCheck,
+          platform: r[7] || '-', format: r[8] || '-', plannerAndAdmin: r[12] || '-', copywriter: r[13] || '-',
+          productionTeam: r[14] || '-', designer: r[15] || '-', editor: r[16] || '-',
+          raw: r, parsedStage: parsedStage, parsedCheck: parsedCheck,
+          sheetName: sheetName
+        });
+      }
+    });
+  });
+
+  const contentList = allParsedItems.filter((item: any) => {
     if (!searchQuery) return true;
     return Object.values(item).some(val => String(val).toLowerCase().includes(searchQuery.toLowerCase()));
   });
-
-  const availableSheetsFromData = data?.sheetNames || (data?.sheets ? Object.keys(data.sheets) : []);
-  const sortedSheetNames = MONTH_ORDER.filter(m => availableSheetsFromData.includes(m));
-  const finalSheetList = sortedSheetNames.length > 0 ? sortedSheetNames : availableSheetsFromData;
 
   const stageCounts = STAGE_NAMES.map(name => ({
     name,
@@ -515,6 +562,13 @@ export default function WorkflowWorkspace() {
 
           <label style={{ ...styles.sectionLabel, marginTop: '20px' }}>Periode 2026</label>
           <div style={styles.menuList}>
+            <button 
+              onClick={() => setSelectedSheet('all')} 
+              style={{ ...styles.menuButton, ...(selectedSheet === 'all' ? styles.menuButtonActive : {}) }}
+            >
+              <span>Semua Periode 2026</span>
+              {selectedSheet === 'all' && <span style={styles.activeDot}></span>}
+            </button>
             {finalSheetList.map((n: string) => {
               const isActive = selectedSheet === n;
               const displayName = n.replace('26', ' 2026');
@@ -563,6 +617,13 @@ export default function WorkflowWorkspace() {
 
             <label style={{ ...styles.sectionLabel, marginTop: '20px' }}>Periode 2026</label>
             <div style={styles.menuList}>
+              <button 
+                onClick={() => { setSelectedSheet('all'); setIsMobileSidebarOpen(false); }} 
+                style={{ ...styles.menuButton, ...(selectedSheet === 'all' ? styles.menuButtonActive : {}) }}
+              >
+                <span>Semua Periode 2026</span>
+                {selectedSheet === 'all' && <span style={styles.activeDot}></span>}
+              </button>
               {finalSheetList.map((n: string) => {
                 const isActive = selectedSheet === n;
                 const displayName = n.replace('26', ' 2026');
@@ -583,7 +644,7 @@ export default function WorkflowWorkspace() {
           <div>
             <span style={styles.headerSub}>Sistem Estafet Otomatis</span>
             <h2 style={styles.headerTitle}>
-              {activeMenu === 'konten' ? selectedSheet.replace('26', ' 2026') : MENU_TITLES[activeMenu]} <span style={styles.countBadge}>{contentList.length} Konten</span>
+              {activeMenu === 'konten' ? (selectedSheet === 'all' ? 'Semua Periode 2026' : selectedSheet.replace('26', ' 2026')) : MENU_TITLES[activeMenu]} <span style={styles.countBadge}>{contentList.length} Konten</span>
             </h2>
           </div>
 
@@ -610,7 +671,10 @@ export default function WorkflowWorkspace() {
                   return (
                     <div key={idx} style={styles.card}>
                       <div className="card-header" style={styles.cardHeader}>
-                        <span style={styles.dateBadge}>{item.date}</span>
+                        <span style={styles.dateBadge}>
+                          {selectedSheet === 'all' && item.sheetName ? `${item.sheetName.replace('26', ' 2026')} · ` : ''}
+                          {item.date}
+                        </span>
                         <button onClick={() => handleOpenEditModal(item)} style={styles.editBtn}>Update Estafet</button>
                       </div>
 
