@@ -17,11 +17,11 @@
  *   -> tambahkan email admin -> permission: "Make changes to events".
  ************************************************************/
 const CONTENT_CALENDAR_CONFIG_FALLBACK = [
-  { member: 'Filius (Planner)',  calendarId: 'GANTI_EMAIL_FILIUS@gmail.com' },
-  { member: 'Raka (Copywriter)', calendarId: 'GANTI_EMAIL_RAKA@gmail.com' },
-  { member: 'Tim Produksi',      calendarId: 'GANTI_EMAIL_TIM_PRODUKSI@gmail.com' },
-  { member: 'Kevin (Designer)',  calendarId: 'GANTI_EMAIL_KEVIN@gmail.com' },
-  { member: 'Alya (Editor)',     calendarId: 'GANTI_EMAIL_ALYA@gmail.com' },
+  { member: 'Filius (Planner)',  calendarId: 'filiuspllahendra@gmail.com' },
+  { member: 'Raka (Copywriter)', calendarId: 'Khittahno2@gmail.com' },
+  { member: 'Tim Produksi',      calendarId: 'chtrnflorencia@gmail.com' },
+  { member: 'Kevin (Designer)',  calendarId: 'alinlilin122@gmail.com' },
+  { member: 'Alya (Editor)',     calendarId: 'najwabalqisazzahra25@gmail.com' },
 ];
 
 // Mulai event jam berapa & durasi (jam). Hanya menampilkan tanggal, jam menyesuaikan.
